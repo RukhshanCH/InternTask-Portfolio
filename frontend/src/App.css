@@ -344,7 +344,6 @@ a {
   font-weight: 500;
 }
 
-/* === Projects === */
 /* === Projects Admin Styles === */
 
 /* Admin Toolbar */
@@ -750,6 +749,81 @@ a {
   }
 }
 
+/* === Admin Password Gate === */
+.admin-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dark);
+  padding: 1rem;
+}
+
+.gate-card {
+  background: var(--light);
+  padding: 2.5rem;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--accent-soft);
+  animation: scaleIn 0.3s ease;
+}
+
+.gate-title {
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+  color: var(--dark);
+  font-size: 1.5rem;
+}
+
+.gate-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--gray);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  background: var(--gray-warm);
+  color: var(--text);
+  box-sizing: border-box;
+  transition: all 0.3s;
+}
+
+.gate-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--light);
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
+}
+
+.gate-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.gate-btn {
+  width: 100%;
+  padding: 0.875rem;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.gate-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* === Projects === */
 .projects {
   background: linear-gradient(180deg, var(--light) 0%, var(--gray-warm) 100%);
 }
