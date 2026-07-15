@@ -1,45 +1,85 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import type { ContentItem } from '../index';
 
-const About: React.FC = () => {
+const API_URL = 'http://localhost:3001/api/content/about?status=published';
+
+export default function About() {
+  const [about, setAbout] = useState<ContentItem | null>(null);
+
+  useEffect(() => {
+    fetch(API_URL)
+      .then((r) => r.json())
+      .then((data: ContentItem[]) => setAbout(data[0] || null))
+      .catch(() => setAbout(null));
+  }, []);
+
+  const d = about?.data as Record<string, unknown> | undefined;
+
+  const heading = String(d?.heading || 'About Me');
+
+  // Prefer 'bio' (textarea with \n\n) over broken 'paragraphs' array
+  const rawBio = String(
+    d?.bio ||
+      (Array.isArray(d?.paragraphs) ? (d.paragraphs as string[]).join('\n\n') : '') ||
+      "I'm a passionate developer with 5+ years of experience.\n\nI specialize in React, TypeScript, and Node.js."
+  );
+  const paragraphs = rawBio.split(/\n\n+/).filter((p) => p.trim().length > 0);
+
+  // FIX: Check both camelCase and lowercase due to DB mismatch
+  const imageUrl = d?.imageUrl ? String(d.imageUrl) : d?.imageurl ? String(d.imageurl) : null;
+
+  // Stats parser (pipe-delimited)
+  const rawStats = d?.stats;
+  let stats: { number: string; label: string }[] = [];
+  if (Array.isArray(rawStats)) {
+    stats = rawStats.map((s: string) => {
+      const parts = String(s).split('|').map((p) => p.trim());
+      return { number: parts[0] || '0', label: parts[1] || 'Stat' };
+    });
+  }
+  if (stats.length === 0) {
+    stats = [
+      { number: '5+', label: 'Years Experience' },
+      { number: '50+', label: 'Projects Completed' },
+      { number: '20+', label: 'Happy Clients' },
+    ];
+  }
+
   return (
     <section id="about" className="about section">
       <div className="container">
-        <h2 className="section-title">About Me</h2>
+        <h2 className="section-title">{heading}</h2>
         <div className="about-grid">
           <div className="about-image">
-            <div className="image-placeholder">
-              <span>Your Photo</span>
-            </div>
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={heading}
+                style={{ width: '100%', aspectRatio: '1', borderRadius: 'var(--radius)', objectFit: 'cover' }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<div class="image-placeholder">Image failed to load</div>';
+                }}
+              />
+            ) : (
+              <div className="image-placeholder">About Image</div>
+            )}
           </div>
           <div className="about-text">
-            <p>
-              I'm a passionate developer with 5+ years of experience crafting 
-              digital products. I specialize in React, TypeScript, and Node.js 
-              ecosystems.
-            </p>
-            <p>
-              When I'm not coding, you'll find me exploring new design patterns, 
-              contributing to open source, or hiking with my camera.
-            </p>
+            {paragraphs.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
             <div className="about-stats">
-              <div className="stat">
-                <span className="stat-number">5+</span>
-                <span className="stat-label">Years Experience</span>
-              </div>
-              <div className="stat">
-                <span className="stat-number">40+</span>
-                <span className="stat-label">Projects Completed</span>
-              </div>
-              <div className="stat">
-                <span className="stat-number">20+</span>
-                <span className="stat-label">Happy Clients</span>
-              </div>
+              {stats.map((stat, i) => (
+                <div key={i} className="stat">
+                  <span className="stat-number">{stat.number}</span>
+                  <span className="stat-label">{stat.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
     </section>
   );
-};
-
-export default About;
+}

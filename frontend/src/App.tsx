@@ -7,9 +7,6 @@ import About from './components/About';
 import Projects from './components/Projects';
 import Skills from './components/Skills';
 import Contact from './components/Contact';
-// import Blog from './pages/Blog';
-// import BlogPost from './pages/BlogPost';
-import DynamicPage from './components/DynamicPage';
 import AdminDashboard from './components/cms/AdminDashboard';
 import ContentManager from './components/cms/ContentManager';
 import ContentTypeBuilder from './components/cms/ContentTypeBuilder';
@@ -79,10 +76,10 @@ function AppContent() {
             <nav className="cms-nav">
               <Link to="/admin" className="cms-nav-link">📊 Dashboard</Link>
               <Link to="/admin/content-types" className="cms-nav-link">🏗️ Content Types</Link>
+              <Link to="/admin/content/hero" className="cms-nav-link">🚀 Hero</Link>
+              <Link to="/admin/content/about" className="cms-nav-link">👨‍💻 About</Link>
               <Link to="/admin/content/project" className="cms-nav-link">🚀 Projects</Link>
-              <Link to="/admin/content/blog-post" className="cms-nav-link">📝 Blog Posts</Link>
               <Link to="/admin/content/skill" className="cms-nav-link">⭐ Skills</Link>
-              <Link to="/admin/pages" className="cms-nav-link">📄 Pages</Link>
             </nav>
           </aside>
           <main className="cms-main">
@@ -114,10 +111,6 @@ function AppContent() {
               <Contact />
             </>
           } />
-          {/* <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPost />} /> */}
-          {/* Dynamic pages LAST — only match if not caught above */}
-          <Route path="/:route" element={<DynamicPage />} />
         </Routes>
       </main>
       <footer className="footer">

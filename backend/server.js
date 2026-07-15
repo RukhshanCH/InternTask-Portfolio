@@ -65,9 +65,8 @@ const Page = mongoose.model('Page', pageSchema);
 
 // ─── SEED DEFAULT CONTENT TYPES ───
 async function seedDefaults() {
-  const existing = await ContentType.findOne({ name: 'project' });
-  if (!existing) {
-    await ContentType.create({
+  const types = [
+    {
       name: 'project',
       label: 'Project',
       icon: '🚀',
@@ -76,14 +75,54 @@ async function seedDefaults() {
         { name: 'description', label: 'Description', type: 'textarea' },
         { name: 'category', label: 'Category', type: 'text' },
         { name: 'technologies', label: 'Technologies', type: 'array' },
-        { name: 'imageUrl', label: 'Image URL', type: 'url' },
+        { name: 'imageUrl', label: 'Project  Image', type: 'image' },
         { name: 'liveUrl', label: 'Live URL', type: 'url' },
         { name: 'githubUrl', label: 'GitHub URL', type: 'url' },
         { name: 'featured', label: 'Featured', type: 'boolean', defaultValue: false },
         { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 }
       ]
-    });
-    console.log('✅ Default content types seeded');
+    },
+    {
+      name: 'skill',
+      label: 'Skill',
+      icon: '⭐',
+      fields: [
+        { name: 'name', label: 'Skill Name', type: 'text', required: true },
+        { name: 'level', label: 'Level', type: 'text' },
+        { name: 'percentage', label: 'Percentage', type: 'number', defaultValue: 75 },
+        { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 }
+      ]
+    },
+    {
+      name: 'about',
+      label: 'About',
+      icon: '👤',
+      fields: [
+        { name: 'heading', label: 'Heading', type: 'text', required: true, defaultValue: 'About Me' },
+        { name: 'paragraphs', label: 'Paragraphs', type: 'array' },
+        { name: 'stats', label: 'Stats', type: 'array' },
+        { name: 'imageUrl', label: 'Profile Image', type: 'image' }
+      ]
+    },
+    {
+      name: 'hero',
+      label: 'Hero',
+      icon: '🏠',
+      fields: [
+        { name: 'greeting', label: 'Greeting', type: 'text', defaultValue: 'Hello, I am' },
+        { name: 'title', label: 'Title', type: 'text', required: true },
+        { name: 'subtitle', label: 'Subtitle', type: 'textarea' },
+        { name: 'buttons', label: 'Buttons', type: 'array' }
+      ]
+    }
+  ];
+
+  for (const type of types) {
+    const existing = await ContentType.findOne({ name: type.name });
+    if (!existing) {
+      await ContentType.create(type);
+      console.log(`✅ Seeded content type: ${type.name}`);
+    }
   }
 }
 seedDefaults();
@@ -206,6 +245,56 @@ app.get('/api/pages/:route', asyncHandler(async (req, res) => {
 
 // ─── HEALTH ───
 app.get('/', (req, res) => res.send('CMS Backend Running'));
+
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Create uploads directory
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+// Configure multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, unique + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(uploadDir));
+
+// Upload endpoint
+app.post('/api/upload', upload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  res.json({
+    url: `http://localhost:3001/uploads/${req.file.filename}`,
+    filename: req.file.filename,
+    size: req.file.size,
+  });
+});
+
+// Optional: delete uploaded file
+app.delete('/api/upload/:filename', (req, res) => {
+  const filePath = path.join(uploadDir, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    res.json({ message: 'Deleted' });
+  } else {
+    res.status(404).json({ error: 'File not found' });
+  }
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 CMS Server on http://localhost:${PORT}`));

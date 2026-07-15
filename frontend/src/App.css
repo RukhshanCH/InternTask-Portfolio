@@ -526,6 +526,7 @@ a {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
 }
 
 .btn-edit-card:hover {
@@ -1188,17 +1189,29 @@ a {
 }
 
 /* === CMS Table === */
+/* === Table Scroll Fix === */
 .cms-table-wrapper {
   background: white;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow-x: auto;        /* ← HORIZONTAL SCROLL instead of hidden */
+  max-width: 100%;
 }
 
 .cms-table {
   width: 100%;
+  min-width: 600px;        /* ← Forces scroll on small screens instead of squishing */
   border-collapse: collapse;
   font-size: 0.9rem;
+}
+
+/* Selected row highlight */
+.selected-row {
+  background: #fef2f2 !important;
+}
+
+.selected-row td {
+  border-bottom: 2px solid #fecaca;
 }
 
 .cms-table th {
@@ -1217,10 +1230,6 @@ a {
 
 .cms-table tr:hover {
   background: var(--accent-bg);
-}
-
-.selected-row {
-  background: #fef2f2 !important;
 }
 
 .status-badge {
@@ -1628,4 +1637,67 @@ a {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* === Image Upload Field === */
+.image-upload-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.image-preview {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--accent-soft);
+}
+
+.image-preview img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.btn-remove-image {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: white;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-remove-image:hover {
+  background: #b91c1c;
+}
+
+.image-upload-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upload-or {
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Table image thumbnail */
+.cms-table td img {
+  border: 1px solid var(--gray);
 }
