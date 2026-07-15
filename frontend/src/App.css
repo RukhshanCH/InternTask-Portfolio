@@ -951,6 +951,88 @@ a {
   box-shadow: 0 4px 12px rgb(59 130 246 / 0.3);
 }
 
+/* === Filters Bar === */
+.project-filters-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+/* === Featured Toggle === */
+.featured-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent-soft);
+  background: var(--light);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.featured-toggle:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.featured-toggle input {
+  display: none;
+}
+
+.featured-toggle.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgb(245 158 11 / 0.3);
+}
+
+/* === Featured Badge on Card === */
+.featured-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+/* === Featured Card Glow === */
+.project-card.project-featured {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 1px #fbbf24, var(--shadow-lg);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .project-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .project-filters {
+    justify-content: center;
+  }
+
+  .featured-toggle {
+    justify-content: center;
+  }
+}
+
 /* === Category Badge on Card === */
 .project-category-badge {
   position: absolute;

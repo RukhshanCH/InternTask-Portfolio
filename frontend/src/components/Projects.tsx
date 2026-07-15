@@ -7,6 +7,7 @@ export default function Projects() {
   const [projects, setProjects] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
   useEffect(() => {
     fetch(API_URL)
@@ -19,7 +20,7 @@ export default function Projects() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Extract unique categories from project data
+  // Extract unique categories
   const categories = useMemo(() => {
     const set = new Set<string>();
     projects.forEach((p) => {
@@ -29,14 +30,25 @@ export default function Projects() {
     return ['All', ...Array.from(set).sort()];
   }, [projects]);
 
-  // Filtered projects
+  // Filter by BOTH category AND featured
   const filtered = useMemo(() => {
-    if (activeCategory === 'All') return projects;
-    return projects.filter((p) => {
-      const cat = String((p.data as Record<string, unknown>).category || '').trim();
-      return cat === activeCategory;
-    });
-  }, [projects, activeCategory]);
+    let result = projects;
+
+    // Category filter
+    if (activeCategory !== 'All') {
+      result = result.filter((p) => {
+        const cat = String((p.data as Record<string, unknown>).category || '').trim();
+        return cat === activeCategory;
+      });
+    }
+
+    // Featured filter
+    if (showFeaturedOnly) {
+      result = result.filter((p) => Boolean((p.data as Record<string, unknown>).featured));
+    }
+
+    return result;
+  }, [projects, activeCategory, showFeaturedOnly]);
 
   if (loading) {
     return (
@@ -70,8 +82,8 @@ export default function Projects() {
       <div className="container">
         <h2 className="section-title">Featured Projects</h2>
 
-        {/* ─── CATEGORY FILTER ─── */}
-        {categories.length > 1 && (
+        {/* ─── FILTERS ─── */}
+        <div className="project-filters-bar">
           <div className="project-filters">
             {categories.map((cat) => (
               <button
@@ -83,7 +95,16 @@ export default function Projects() {
               </button>
             ))}
           </div>
-        )}
+
+          <label className={`featured-toggle ${showFeaturedOnly ? 'active' : ''}`}>
+            <input
+              type="checkbox"
+              checked={showFeaturedOnly}
+              onChange={(e) => setShowFeaturedOnly(e.target.checked)}
+            />
+            <span>⭐ Featured Only</span>
+          </label>
+        </div>
 
         <div className="projects-grid">
           {filtered.map((project, index) => {
@@ -95,9 +116,12 @@ export default function Projects() {
             const liveUrl = d.liveUrl ? String(d.liveUrl) : d.liveurl ? String(d.liveurl) : null;
             const githubUrl = d.githubUrl ? String(d.githubUrl) : d.githuburl ? String(d.githuburl) : null;
             const category = String(d.category || '');
+            const isFeatured = Boolean(d.featured);
+            const instaUrl = d.liveUrl ? String(d.instaUrl) : d.instaurl ? String(d.instaurl) : null;
+            const fbUrl = d.liveUrl ? String(d.lfbrl) : d.lifbl ? String(d.livfb) : null;
 
             return (
-              <article key={project._id} className="project-card">
+              <article key={project._id} className={`project-card ${isFeatured ? 'project-featured' : ''}`}>
                 <div className="project-image">
                   {imageUrl ? (
                     <img
@@ -118,6 +142,7 @@ export default function Projects() {
                       <span>Project {index + 1}</span>
                     </div>
                   )}
+                  {isFeatured && <span className="featured-badge">⭐ Featured</span>}
                   {category && <span className="project-category-badge">{category}</span>}
                 </div>
                 <div className="project-content">
@@ -142,15 +167,31 @@ export default function Projects() {
                       </a>
                     )}
                   </div>
+                  <div className="project-links">
+                    {instaUrl && (
+                      <a href={instaUrl} className="link-primary" target="_blank" rel="noreferrer">
+                        InstaGram
+                      </a>
+                    )}
+                    {fbUrl && (
+                      <a href={fbUrl} className="link-secondary" target="_blank" rel="noreferrer">
+                        Facebook
+                      </a>
+                    )}
+                  </div>
                 </div>
               </article>
             );
           })}
         </div>
 
-        {filtered.length === 0 && activeCategory !== 'All' && (
+        {filtered.length === 0 && (
           <p className="empty-state" style={{ marginTop: '2rem' }}>
-            No projects in <strong>{activeCategory}</strong> category.
+            {showFeaturedOnly && activeCategory !== 'All'
+              ? <>No featured projects in <strong>{activeCategory}</strong>.</>
+              : showFeaturedOnly
+                ? 'No featured projects yet.'
+                : <>No projects in <strong>{activeCategory}</strong>.</>}
           </p>
         )}
       </div>
