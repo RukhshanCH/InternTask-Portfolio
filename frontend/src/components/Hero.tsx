@@ -51,9 +51,16 @@ export default function Hero() {
     d?.subtitle || 'Full-stack developer crafting modern web experiences with React, Node.js, and TypeScript.'
   );
   const buttons = parseButtons(d?.buttons);
+  const backgroundImage = d?.backgroundImage ? String(d.backgroundImage) : d?.backgroundImage ? String(d.backgroundimage) : null;
 
   return (
-    <section className="hero">
+    <section className="hero"
+      style={backgroundImage ? {
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      } : undefined}
+    >
       <p className="hero-greeting">{greeting}</p>
       <h1 className="hero-title">{title}</h1>
       <p className="hero-subtitle">{subtitle}</p>

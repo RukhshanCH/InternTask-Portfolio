@@ -83,6 +83,10 @@ async function seedDefaults() {
         { name: 'imageUrl', label: 'Project Image', type: 'image' },
         { name: 'liveUrl', label: 'Live URL', type: 'url' },
         { name: 'githubUrl', label: 'GitHub URL', type: 'url' },
+        { name: 'linkedinUrl', label: 'Linkedin URL', type: 'url' },
+        { name: 'behanceUrl', label: 'Behance URL', type: 'url' },
+        { name: 'instaUrl', label: 'Instagram URL', type: 'url' },
+        { name: 'fbUrl', label: 'Facebook URL', type: 'url' },
         { name: 'featured', label: 'Featured', type: 'boolean', defaultValue: false },
         { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 }
       ]
@@ -117,7 +121,8 @@ async function seedDefaults() {
         { name: 'greeting', label: 'Greeting', type: 'text', defaultValue: 'Hello, I am' },
         { name: 'title', label: 'Title', type: 'text', required: true },
         { name: 'subtitle', label: 'Subtitle', type: 'textarea' },
-        { name: 'buttons', label: 'Buttons', type: 'array' }
+        { name: 'buttons', label: 'Buttons', type: 'array' },
+        { name: 'backgroungImage', label: 'Background Image', type: 'image' }
       ]
     }
   ];

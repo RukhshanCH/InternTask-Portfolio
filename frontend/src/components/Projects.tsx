@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import type { ContentItem } from '../index';
+import { FaGithub, FaInstagram, FaFacebook, FaLinkedin, FaGlobe, FaPalette, FaComment } from 'react-icons/fa';
 
 const API_URL = 'http://localhost:3001/api/content/project?status=published&sort=order';
 
@@ -121,6 +122,7 @@ export default function Projects() {
             const fbUrl = d.fbUrl ? String(d.fbUrl) : d.fburl ? String(d.fburl) : null;
             const behanceUrl = d.behanceUrl ? String(d.behanceUrl) : d.behanceurl ? String(d.behanceurl) : null;
             const linkedinUrl = d.linkedinUrl ? String(d.linkedinUrl) : d.linkedinurl ? String(d.linkedinurl) : null;
+            const redditUrl = d.redditUrl ? String(d.redditUrl) : d.redditurl ? String(d.redditurl) : null;
 
             return (
               <article key={project._id} className={`project-card ${isFeatured ? 'project-featured' : ''}`}>
@@ -129,14 +131,9 @@ export default function Projects() {
                     <img
                       src={imageUrl}
                       alt={title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
-                        const placeholder = document.createElement('div');
-                        placeholder.className = 'image-placeholder';
-                        placeholder.innerHTML = `<span>Project ${index + 1}</span>`;
-                        target.parentElement?.appendChild(placeholder);
                       }}
                     />
                   ) : (
@@ -144,52 +141,57 @@ export default function Projects() {
                       <span>Project {index + 1}</span>
                     </div>
                   )}
-                  {isFeatured && <span className="featured-badge">⭐ Featured</span>}
-                  {category && <span className="project-category-badge">{category}</span>}
+
+                  <div className="project-badges">
+                    {isFeatured && <span className="featured-badge">⭐ Featured</span>}
+                    {category && <span className="project-category-badge">{category}</span>}
+                  </div>
                 </div>
+
                 <div className="project-content">
                   <h3>{title}</h3>
                   <p>{description}</p>
+
                   <div className="project-tags">
                     {technologies.map((tag: string, idx: number) => (
-                      <span key={idx} className="tag">
-                        {tag}
-                      </span>
+                      <span key={idx} className="tag">{tag}</span>
                     ))}
                   </div>
+
                   <div className="project-links">
                     {liveUrl && (
-                      <a href={liveUrl} className="link-primary" target="_blank" rel="noreferrer">
-                        Live Demo →
+                      <a href={liveUrl} className="link-primary" target="_blank" rel="noreferrer" title='Live Demo'>
+                        <FaGlobe size={18} />
                       </a>
                     )}
                     {githubUrl && (
-                      <a href={githubUrl} className="link-secondary" target="_blank" rel="noreferrer">
-                        GitHub
+                      <a href={githubUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Github'>
+                        <FaGithub size={18} />
                       </a>
                     )}
-                  </div>
-                  <div className="project-links">
                     {instaUrl && (
-                      <a href={instaUrl} className="link-primary" target="_blank" rel="noreferrer">
-                        InstaGram
+                      <a href={instaUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Instagram'>
+                        <FaInstagram size={18} />
                       </a>
                     )}
                     {fbUrl && (
-                      <a href={fbUrl} className="link-secondary" target="_blank" rel="noreferrer">
-                        Facebook
+                      <a href={fbUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Facebook'>
+                        <FaFacebook size={18} />
                       </a>
                     )}
-                  </div>
-                  <div className="project-links">
                     {behanceUrl && (
-                      <a href={behanceUrl} className="link-primary" target="_blank" rel="noreferrer">
-                        Behance
+                      <a href={behanceUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Behance'>
+                        <FaPalette size={18} />
                       </a>
                     )}
                     {linkedinUrl && (
-                      <a href={linkedinUrl} className="link-secondary" target="_blank" rel="noreferrer">
-                        Linkedin
+                      <a href={linkedinUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Linkedin'>
+                        <FaLinkedin size={18} />
+                      </a>
+                    )}
+                    {redditUrl && (
+                      <a href={redditUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Reddit'>
+                        <FaComment size={18} />
                       </a>
                     )}
                   </div>
