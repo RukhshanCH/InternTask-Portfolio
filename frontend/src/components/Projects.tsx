@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
+import { FaGlobe, FaGithub, FaInstagram, FaFacebook, FaPalette, FaLinkedin, FaComment } from 'react-icons/fa';
 import type { ContentItem } from '../index';
-import { FaGithub, FaInstagram, FaFacebook, FaLinkedin, FaGlobe, FaPalette, FaComment } from 'react-icons/fa';
+import ImageCarousel from './Carousel';
 
 const API_URL = 'http://localhost:3001/api/content/project?status=published&sort=order';
 
@@ -21,7 +22,6 @@ export default function Projects() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Extract unique categories
   const categories = useMemo(() => {
     const set = new Set<string>();
     projects.forEach((p) => {
@@ -31,23 +31,17 @@ export default function Projects() {
     return ['All', ...Array.from(set).sort()];
   }, [projects]);
 
-  // Filter by BOTH category AND featured
   const filtered = useMemo(() => {
     let result = projects;
-
-    // Category filter
     if (activeCategory !== 'All') {
       result = result.filter((p) => {
         const cat = String((p.data as Record<string, unknown>).category || '').trim();
         return cat === activeCategory;
       });
     }
-
-    // Featured filter
     if (showFeaturedOnly) {
       result = result.filter((p) => Boolean((p.data as Record<string, unknown>).featured));
     }
-
     return result;
   }, [projects, activeCategory, showFeaturedOnly]);
 
@@ -83,7 +77,6 @@ export default function Projects() {
       <div className="container">
         <h2 className="section-title">Featured Projects</h2>
 
-        {/* ─── FILTERS ─── */}
         <div className="project-filters-bar">
           <div className="project-filters">
             {categories.map((cat) => (
@@ -113,34 +106,31 @@ export default function Projects() {
             const title = String(d.title || 'Untitled');
             const description = String(d.description || '');
             const technologies = (d.technologies as string[]) || [];
-            const imageUrl = d.imageUrl ? String(d.imageUrl) : d.imageurl ? String(d.imageurl) : null;
+
+            // Support multiple images: images (array) or single imageUrl/imageurl
+            let images: string[] = [];
+            if (d.images && Array.isArray(d.images)) {
+              images = d.images as string[];
+            } else if (d.imageUrl) {
+              images = [String(d.imageUrl)];
+            } else if (d.imageurl) {
+              images = [String(d.imageurl)];
+            }
+
             const liveUrl = d.liveUrl ? String(d.liveUrl) : d.liveurl ? String(d.liveurl) : null;
             const githubUrl = d.githubUrl ? String(d.githubUrl) : d.githuburl ? String(d.githuburl) : null;
-            const category = String(d.category || '');
-            const isFeatured = Boolean(d.featured);
             const instaUrl = d.instaUrl ? String(d.instaUrl) : d.instaurl ? String(d.instaurl) : null;
             const fbUrl = d.fbUrl ? String(d.fbUrl) : d.fburl ? String(d.fburl) : null;
             const behanceUrl = d.behanceUrl ? String(d.behanceUrl) : d.behanceurl ? String(d.behanceurl) : null;
             const linkedinUrl = d.linkedinUrl ? String(d.linkedinUrl) : d.linkedinurl ? String(d.linkedinurl) : null;
             const redditUrl = d.redditUrl ? String(d.redditUrl) : d.redditurl ? String(d.redditurl) : null;
+            const category = String(d.category || '');
+            const isFeatured = Boolean(d.featured);
 
             return (
               <article key={project._id} className={`project-card ${isFeatured ? 'project-featured' : ''}`}>
                 <div className="project-image">
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt={title}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="image-placeholder">
-                      <span>Project {index + 1}</span>
-                    </div>
-                  )}
+                  <ImageCarousel images={images} title={title} index={index} />
 
                   <div className="project-badges">
                     {isFeatured && <span className="featured-badge">⭐ Featured</span>}

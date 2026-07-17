@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { FaTimes, FaUpload, FaImage } from 'react-icons/fa';
 import type { ContentType, ContentItem } from '../../index';
 
 const API_BASE = 'http://localhost:3001/api';
@@ -16,6 +17,7 @@ export default function ContentManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
 
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -23,7 +25,6 @@ export default function ContentManager() {
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // ─── FETCH CONTENT TYPE (fresh every time) ───
   const fetchContentType = useCallback(async () => {
     if (!typeName) return;
     try {
@@ -32,12 +33,11 @@ export default function ContentManager() {
       const ct = types.find(t => t.name === typeName);
       setContentType(ct || null);
       if (!ct) setError(`Content type "${typeName}" not found`);
-    } catch (err) {
+    } catch {
       setError('Failed to load content type');
     }
   }, [typeName]);
 
-  // ─── FETCH ITEMS ───
   const loadItems = useCallback(async () => {
     if (!typeName) return;
     setLoading(true);
@@ -46,14 +46,13 @@ export default function ContentManager() {
       const res = await fetch(`${API_BASE}/content/${typeName}?status=all&sort=order`);
       const data: ContentItem[] = await res.json();
       setItems(data);
-    } catch (err) {
+    } catch {
       setError('Failed to load items');
     } finally {
       setLoading(false);
     }
   }, [typeName]);
 
-  // Load on mount and when typeName changes
   useEffect(() => {
     fetchContentType();
     loadItems();
@@ -64,16 +63,13 @@ export default function ContentManager() {
     setTimeout(() => setAlert(null), 3500);
   };
 
-  // ─── AUTO-INCREMENT ORDER ───
   const getNextOrder = (): number => {
     if (items.length === 0) return 1;
     const orders = items.map(i => Number((i.data as Record<string, unknown>).order) || 0);
     return Math.max(...orders) + 1;
   };
 
-  // ─── OPEN MODAL (re-fetches schema to get latest changes) ───
   const openModal = async (item?: ContentItem) => {
-    // CRITICAL: Re-fetch content type so we have the latest schema
     await fetchContentType();
 
     if (item) {
@@ -177,6 +173,7 @@ export default function ContentManager() {
     }
   };
 
+  // ─── SINGLE FILE UPLOAD ───
   const handleFileSelect = async (fieldName: string, file: File) => {
     if (!file) return;
     setUploadingField(fieldName);
@@ -199,6 +196,54 @@ export default function ContentManager() {
     }
   };
 
+  // ─── MULTI-IMAGE UPLOAD ───
+  const handleMultiUpload = async (fieldName: string, files: FileList) => {
+    if (!files || files.length === 0) return;
+
+    const currentImages = (formData[fieldName] as string[]) || [];
+    const newUrls: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setUploadProgress(prev => ({ ...prev, [`${fieldName}-${i}`]: 0 }));
+
+      const uploadData = new FormData();
+      uploadData.append('image', file);
+
+      try {
+        setUploadProgress(prev => ({ ...prev, [`${fieldName}-${i}`]: 50 }));
+        const res = await fetch(`${API_BASE}/upload`, {
+          method: 'POST',
+          body: uploadData,
+        });
+        const result = await res.json();
+        newUrls.push(result.url);
+        setUploadProgress(prev => ({ ...prev, [`${fieldName}-${i}`]: 100 }));
+      } catch {
+        showAlert('error', `Failed to upload ${file.name}`);
+      }
+    }
+
+    // Merge with existing images
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: [...currentImages, ...newUrls],
+    }));
+
+    setUploadingField(null);
+    setUploadProgress({});
+
+    if (newUrls.length > 0) {
+      showAlert('success', `${newUrls.length} image(s) uploaded!`);
+    }
+  };
+
+  const removeImage = (fieldName: string, index: number) => {
+    const images = (formData[fieldName] as string[]) || [];
+    const updated = images.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, [fieldName]: updated }));
+  };
+
   const renderFieldInput = (field: ContentType['fields'][0]) => {
     const value = formData[field.name] ?? '';
     const onChange = (v: unknown) => setFormData(prev => ({ ...prev, [field.name]: v }));
@@ -219,6 +264,80 @@ export default function ContentManager() {
         return <input className="form-input" type="number" value={String(value)} onChange={e => onChange(Number(e.target.value))} placeholder={field.label} />;
 
       case 'array':
+        // Check if this is an image array (field name contains 'image' or 'images')
+        const isImageArray = field.name.toLowerCase().includes('image');
+
+        if (isImageArray) {
+          const images = (formData[field.name] as string[]) || [];
+
+          return (
+            <div className="multi-image-field">
+              {/* Existing Images Grid */}
+              {images.length > 0 && (
+                <div className="image-grid">
+                  {images.map((url, idx) => (
+                    <div key={idx} className="image-grid-item">
+                      <img src={url} alt={`Image ${idx + 1}`} />
+                      <button
+                        type="button"
+                        className="image-remove-btn"
+                        onClick={() => removeImage(field.name, idx)}
+                        title="Remove image"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload Controls */}
+              <div className="multi-upload-controls">
+                <input
+                  className="form-input"
+                  type="text"
+                  value={Array.isArray(value) ? value.join(', ') : String(value)}
+                  onChange={e => onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                  placeholder="Or paste image URLs (comma separated)"
+                />
+                <span className="upload-or">— OR —</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  ref={el => { fileInputRefs.current[field.name] = el; }}
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const files = e.target.files;
+                    if (files) handleMultiUpload(field.name, files);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn-admin btn-select"
+                  onClick={() => fileInputRefs.current[field.name]?.click()}
+                  disabled={uploadingField === field.name}
+                >
+                  <FaUpload />
+                  {uploadingField === field.name ? 'Uploading...' : 'Upload Multiple Images'}
+                </button>
+              </div>
+
+              {/* Progress indicators */}
+              {Object.keys(uploadProgress).length > 0 && (
+                <div className="upload-progress">
+                  {Object.entries(uploadProgress).map(([key, progress]) => (
+                    <div key={key} className="progress-bar">
+                      <div className="progress-fill" style={{ width: `${progress}%` }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // Regular array (non-image)
         return <input className="form-input" value={Array.isArray(value) ? value.join(', ') : String(value)} onChange={e => onChange(e.target.value.split(',').map(s => s.trim()))} placeholder={`${field.label} (comma separated)`} />;
 
       case 'select':
@@ -237,7 +356,9 @@ export default function ContentManager() {
             {value && (
               <div className="image-preview">
                 <img src={String(value)} alt="Preview" />
-                <button type="button" className="btn-remove-image" onClick={() => onChange('')}>×</button>
+                <button type="button" className="btn-remove-image" onClick={() => onChange('')}>
+                  <FaTimes />
+                </button>
               </div>
             )}
             <div className="image-upload-controls">
@@ -248,7 +369,10 @@ export default function ContentManager() {
                 accept="image/*"
                 ref={el => { fileInputRefs.current[field.name] = el; }}
                 style={{ display: 'none' }}
-                onChange={e => { const file = e.target.files?.[0]; if (file) handleFileSelect(field.name, file); }}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileSelect(field.name, file);
+                }}
               />
               <button
                 type="button"
@@ -256,7 +380,8 @@ export default function ContentManager() {
                 onClick={() => fileInputRefs.current[field.name]?.click()}
                 disabled={uploadingField === field.name}
               >
-                {uploadingField === field.name ? 'Uploading...' : '📁 Upload Image'}
+                <FaImage />
+                {uploadingField === field.name ? 'Uploading...' : 'Upload Image'}
               </button>
             </div>
           </div>
@@ -333,14 +458,24 @@ export default function ContentManager() {
                   {contentType.fields.map(f => (
                     <td key={f.name}>
                       {f.type === 'boolean' ? (item.data[f.name] ? '✅' : '❌') :
-                        f.type === 'array' ? (item.data[f.name] as string[])?.join(', ') :
-                          f.type === 'image' && item.data[f.name] ? (
-                            <img src={String(item.data[f.name])} alt="" style={{ width: 60, height: 40, objectFit: 'cover', borderRadius: 4 }} />
-                          ) :
-                            f.type === 'select' ? (
-                              <span className="tag">{String(item.data[f.name] || '-')}</span>
+                        f.type === 'array' && f.name.toLowerCase().includes('image') ? (
+                          <div className="table-image-stack">
+                            {((item.data[f.name] as string[]) || []).slice(0, 3).map((url, i) => (
+                              <img key={i} src={url} alt="" className="table-thumb" style={{ marginLeft: i > 0 ? -12 : 0, zIndex: 3 - i }} />
+                            ))}
+                            {((item.data[f.name] as string[]) || []).length > 3 && (
+                              <span className="table-more-images">+{((item.data[f.name] as string[]) || []).length - 3}</span>
+                            )}
+                          </div>
+                        ) :
+                          f.type === 'array' ? (item.data[f.name] as string[])?.join(', ') :
+                            f.type === 'image' && item.data[f.name] ? (
+                              <img src={String(item.data[f.name])} alt="" className="table-thumb" />
                             ) :
-                              String(item.data[f.name] ?? '-')}
+                              f.type === 'select' ? (
+                                <span className="tag">{String(item.data[f.name] || '-')}</span>
+                              ) :
+                                String(item.data[f.name] ?? '-')}
                     </td>
                   ))}
                   <td><span className={`status-badge status-${item.status}`}>{item.status}</span></td>
@@ -359,7 +494,6 @@ export default function ContentManager() {
         </div>
       )}
 
-      {/* Modal */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setIsModalOpen(false)}>
           <div className="modal modal-large">
