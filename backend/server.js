@@ -1,7 +1,24 @@
-console.log('Looking for .env at:', require('path').join(__dirname, '.env'));
-console.log('MONGODB_URI:', process.env.MONGODB_URI);
+// Force load .env manually before anything else
+const fs = require('fs');
+const path = require('path');
 
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+const envPath = path.resolve(__dirname, '.env');
+
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const [key, ...valueParts] = line.split('=');
+    if (key && valueParts.length > 0) {
+      const value = valueParts.join('=').trim(); // handle values with = in them
+      if (value && !value.startsWith('#')) {
+        process.env[key.trim()] = value;
+      }
+    }
+  });
+}
+
+console.log('MONGODB_URI loaded?', !!process.env.MONGODB_URI);
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -71,6 +88,7 @@ async function seedDefaults() {
       label: 'Project',
       icon: '🚀',
       fields: [
+        // Basic info
         { name: 'title', label: 'Title', type: 'text', required: true },
         { name: 'description', label: 'Description', type: 'textarea' },
         {
@@ -80,15 +98,25 @@ async function seedDefaults() {
           options: ['Web Development', 'Mobile App', 'AI/ML', 'Design', 'DevOps', 'Other']
         },
         { name: 'technologies', label: 'Technologies', type: 'array' },
-        { name: 'imageUrl', label: 'Project Image', type: 'image' },
+
+        // Images grouped together
+        { name: 'imageUrl', label: 'Image URL', type: 'image' },
+        { name: 'images', label: 'Images', type: 'array' },  // ← moved here
+
+        // Project links
         { name: 'liveUrl', label: 'Live URL', type: 'url' },
         { name: 'githubUrl', label: 'GitHub URL', type: 'url' },
-        { name: 'linkedinUrl', label: 'Linkedin URL', type: 'url' },
-        { name: 'behanceUrl', label: 'Behance URL', type: 'url' },
+
+        // Display controls
+        { name: 'featured', label: 'Featured', type: 'boolean', defaultValue: false },
+        { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 },
+
+        // Social URLs — all at the bottom
         { name: 'instaUrl', label: 'Instagram URL', type: 'url' },
         { name: 'fbUrl', label: 'Facebook URL', type: 'url' },
-        { name: 'featured', label: 'Featured', type: 'boolean', defaultValue: false },
-        { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 }
+        { name: 'behanceUrl', label: 'Behance URL', type: 'url' },
+        { name: 'linkedinUrl', label: 'LinkedIn URL', type: 'url' },
+        { name: 'redditUrl', label: 'Reddit URL', type: 'url' }  // ← added
       ]
     },
     {
@@ -267,8 +295,6 @@ app.get('/api/pages/:route', asyncHandler(async (req, res) => {
 app.get('/', (req, res) => res.send('CMS Backend Running'));
 
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
 // Create uploads directory
 const uploadDir = path.join(__dirname, 'uploads');
