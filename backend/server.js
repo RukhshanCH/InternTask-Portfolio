@@ -17,8 +17,6 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-console.log('MONGODB_URI loaded?', !!process.env.MONGODB_URI);
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -26,11 +24,6 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// ─── MONGOOSE CONNECTION ───
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB error:', err));
 
 // ─── SCHEMAS ───
 
@@ -159,11 +152,29 @@ async function seedDefaults() {
     const existing = await ContentType.findOne({ name: type.name });
     if (!existing) {
       await ContentType.create(type);
-      console.log(`✅ Seeded content type: ${type.name}`);
     }
   }
 }
-seedDefaults();
+
+// ─── MONGOOSE CONNECTION ───
+async function startServer() {
+
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+
+    // Seed after connection
+    await seedDefaults();
+
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT);
+  } catch (err) {
+    console.error('❌ MongoDB connection failed:', err.message);
+    process.exit(1);
+  }
+
+}
+
+startServer();
 
 // ─── MIDDLEWARE ───
 const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -341,6 +352,3 @@ app.delete('/api/upload/:filename', (req, res) => {
     res.status(404).json({ error: 'File not found' });
   }
 });
-
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 CMS Server on http://localhost:${PORT}`));
