@@ -1743,6 +1743,10 @@ a {
   margin-bottom: var(--space-6);
 }
 
+.dark-mode .cms-page-title {
+  color: var(--accent);
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1770,6 +1774,10 @@ a {
   color: var(--dark);
 }
 
+.dark-mode .stat-value {
+  color: var(--text);
+}
+
 .stat-label-cms {
   color: var(--text-light);
   font-size: var(--font-size-md);
@@ -1793,6 +1801,10 @@ a {
   font-size: var(--font-size-xl);
   color: var(--dark);
   margin-bottom: var(--space-4);
+}
+
+.dark-mode .dashboard-section h2 {
+  color: var(--text);
 }
 
 /* === Content Type List === */
@@ -1839,6 +1851,10 @@ a {
 .ct-name {
   font-weight: 600;
   color: var(--dark);
+}
+
+.dark-mode .ct-name {
+  color: var(--text);
 }
 
 .ct-fields {
@@ -1891,6 +1907,10 @@ a {
   font-size: var(--font-size-base);
 }
 
+.dark-mode .recent-title {
+  color: var(--text);
+}
+
 .recent-meta {
   font-size: var(--font-size-sm);
   color: var(--text-light);
@@ -1931,6 +1951,10 @@ a {
 .ct-details h3 {
   margin: 0;
   color: var(--dark);
+}
+
+.dark-mode .ct-details h3 {
+  color: var(--text);
 }
 
 .ct-code {
@@ -1984,6 +2008,10 @@ a {
   margin: 0;
   font-size: var(--font-size-xl);
   color: var(--dark);
+}
+
+.dark-mode .fields-header h3 {
+  color: var(--accent);
 }
 
 /* === Field Row Wrapper === */

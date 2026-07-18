@@ -24,6 +24,17 @@ export default function PageBuilder() {
     loadPages();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        isModalOpen && setIsModalOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [setIsModalOpen, isModalOpen]);
+
   const loadPages = async () => {
     const res = await fetch('http://localhost:3001/api/pages');
     const data = await res.json();
