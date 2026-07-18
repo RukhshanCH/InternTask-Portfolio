@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import type { ContentItem } from '..';
 
+const API_URL = 'http://localhost:3001/api/content/hero?status=published';
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hero, setHero] = useState<ContentItem | null>(null);
+
+  useEffect(() => {
+    fetch(API_URL)
+      .then((r) => r.json())
+      .then((data: ContentItem[]) => setHero(data[0] || null))
+      .catch(() => setHero(null));
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -17,13 +27,16 @@ const Navbar: React.FC = () => {
     { label: 'Contact', href: '#contact' },
   ];
 
+  const d = hero?.data as Record<string, unknown> | undefined;
+  const backgroundImage = d?.backgroundImage ? String(d.backgroundImage) : d?.backgroundImage ? String(d.backgroundimage) : null;
+
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="nav-container">
         <a href="#" className="nav-logo">Portfolio</a>
-        
-        <button 
-          className="nav-toggle" 
+
+        <button
+          className="nav-toggle"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
         >
@@ -33,7 +46,7 @@ const Navbar: React.FC = () => {
         <ul className={`nav-links ${mobileOpen ? 'open' : ''}`}>
           {navLinks.map((link) => (
             <li key={link.href}>
-              <a href={link.href} onClick={() => setMobileOpen(false)}>
+              <a href={link.href} className={`${backgroundImage ? 'bg-nav' : ''}`} onClick={() => setMobileOpen(false)}>
                 {link.label}
               </a>
             </li>

@@ -62,19 +62,23 @@ export default function Hero() {
       } : undefined}
     >
 
-      <div className="hero-banner"></div>
+      {
+        backgroundImage && (
+          <div className="hero-banner"></div>
+        )
+      }
 
       <div className="hero-container">
         <p className="hero-greeting">{greeting}</p>
-        <h1 className="hero-title">{title}</h1>
-        <p className="hero-subtitle">{subtitle}</p>
+        <h1 className={`hero-title ${backgroundImage ? 'bg-title' : ''}`}>{title}</h1>
+        <p className={`hero-subtitle ${backgroundImage ? 'bg-subtitle' : ''}`}>{subtitle}</p>
 
         <div className="hero-buttons">
           {buttons.map((btn, i) => (
             <a
               key={i}
               href={btn.link}
-              className={btn.style === 'primary' ? 'btn btn-primary' : 'btn btn-secondary'}
+              className={btn.style === 'primary' ? 'btn btn-primary' : `btn btn-secondary ${backgroundImage ? 'bg-text' : ''}`}
             >
               {btn.label}
             </a>
