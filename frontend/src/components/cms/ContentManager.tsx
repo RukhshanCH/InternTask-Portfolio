@@ -4,7 +4,7 @@ import { FaTimes, FaUpload, FaImage, FaGripVertical } from 'react-icons/fa';
 import type { ContentType, ContentItem } from '../../index';
 import ThemePreview from './ThemePreview';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE: string = (import.meta as any).env?.VITE_BACKEND_URL || 'password' + '/api';
 
 export default function ContentManager() {
   const { typeName } = useParams<{ typeName: string }>();

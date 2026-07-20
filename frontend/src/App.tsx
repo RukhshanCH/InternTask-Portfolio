@@ -17,7 +17,7 @@ import type { ContentItem } from '.';
 import Loader from './components/Loader';
 
 const ADMIN_PASSWORD: string = (import.meta as any).env?.VITE_ADMIN_PASSWORD || 'password';
-const API_BASE = 'http://localhost:3001/api/content';
+const API_BASE: string = (import.meta as any).env?.VITE_BACKEND_URL || 'password' + '/api/content';
 
 // ─── PASSWORD GATE ───
 function PasswordGate({ children }: { children: React.ReactNode }) {
