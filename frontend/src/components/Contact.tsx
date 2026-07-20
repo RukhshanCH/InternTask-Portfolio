@@ -1,19 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { ContentItem } from '../index';
 import { FaEnvelope, FaLinkedin, FaGithub, FaPhone, FaMapMarkerAlt, FaWhatsapp } from 'react-icons/fa';
 
-const API_URL = 'http://localhost:3001/api/content/contact?status=published&sort=order';
+interface ContactProps {
+  data?: ContentItem | null;
+}
 
-export default function Contact() {
-  const [contacts, setContacts] = useState<ContentItem[]>([]);
+export default function Contact({ data: contactProp }: ContactProps) {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-
-  useEffect(() => {
-    fetch(API_URL)
-      .then((r) => r.json())
-      .then((data: ContentItem[]) => setContacts(data))
-      .catch(() => setContacts([]));
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +15,7 @@ export default function Contact() {
     setFormData({ name: '', email: '', message: '' });
   };
 
-  const contact = contacts[0];
-  const d = (contact?.data as Record<string, unknown>) || {};
+  const d = (contactProp?.data as Record<string, unknown>) || {};
 
   const heading = String(d.heading || 'Get In Touch');
   const subheading = String(d.subheading || "Have a project in mind? Let's work together.");
@@ -39,7 +32,9 @@ export default function Contact() {
     { url: github, icon: <FaGithub size={20} />, label: 'GitHub', title: 'GitHub' },
     { url: linkedin, icon: <FaLinkedin size={20} />, label: 'LinkedIn', title: 'LinkedIn' },
     {
-      url: whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(WHATSAPP_MSG)}` : undefined,
+      url: whatsapp
+        ? `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(WHATSAPP_MSG)}`
+        : undefined,
       icon: <FaWhatsapp size={20} />,
       label: 'WhatsApp',
       title: 'WhatsApp',

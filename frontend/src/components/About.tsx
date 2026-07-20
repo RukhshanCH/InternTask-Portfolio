@@ -1,23 +1,14 @@
-import { useEffect, useState } from 'react';
 import type { ContentItem } from '../index';
 
-const API_URL = 'http://localhost:3001/api/content/about?status=published';
+interface AboutProps {
+  data?: ContentItem | null;
+}
 
-export default function About() {
-  const [about, setAbout] = useState<ContentItem | null>(null);
-
-  useEffect(() => {
-    fetch(API_URL)
-      .then((r) => r.json())
-      .then((data: ContentItem[]) => setAbout(data[0] || null))
-      .catch(() => setAbout(null));
-  }, []);
-
-  const d = about?.data as Record<string, unknown> | undefined;
+export default function About({ data: aboutProp }: AboutProps) {
+  const d = aboutProp?.data as Record<string, unknown> | undefined;
 
   const heading = String(d?.heading || 'About Me');
 
-  // Prefer 'bio' (textarea with \n\n) over broken 'paragraphs' array
   const rawBio = String(
     d?.bio ||
       (Array.isArray(d?.paragraphs) ? (d.paragraphs as string[]).join('\n\n') : '') ||
@@ -25,10 +16,8 @@ export default function About() {
   );
   const paragraphs = rawBio.split(/\n\n+/).filter((p) => p.trim().length > 0);
 
-  // FIX: Check both camelCase and lowercase due to DB mismatch
   const imageUrl = d?.imageUrl ? String(d.imageUrl) : d?.imageurl ? String(d.imageurl) : null;
 
-  // Stats parser (pipe-delimited)
   const rawStats = d?.stats;
   let stats: { number: string; label: string }[] = [];
   if (Array.isArray(rawStats)) {

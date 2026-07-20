@@ -1,7 +1,4 @@
-import { useEffect, useState } from 'react';
 import type { ContentItem } from '../index';
-
-const API_URL = 'http://localhost:3001/api/content/hero?status=published';
 
 interface HeroButton {
   label: string;
@@ -9,13 +6,15 @@ interface HeroButton {
   style: 'primary' | 'secondary';
 }
 
+interface HeroProps {
+  data?: ContentItem | null;
+}
+
 function parseButtons(buttonsData: unknown): HeroButton[] {
-  // If it's already an array of objects, use it
   if (Array.isArray(buttonsData) && buttonsData.length > 0 && typeof buttonsData[0] !== 'string') {
     return buttonsData as HeroButton[];
   }
 
-  // If it's an array of pipe-delimited strings, parse them
   if (Array.isArray(buttonsData)) {
     return buttonsData.map((btn: string) => {
       const parts = btn.split('|').map((s) => s.trim());
@@ -27,46 +26,41 @@ function parseButtons(buttonsData: unknown): HeroButton[] {
     });
   }
 
-  // Default fallback
   return [
     { label: 'View My Work', link: '#projects', style: 'primary' },
     { label: 'Contact Me', link: '#contact', style: 'secondary' },
   ];
 }
 
-export default function Hero() {
-  const [hero, setHero] = useState<ContentItem | null>(null);
+export default function Hero({ data: heroProp }: HeroProps) {
+  const d = heroProp?.data as Record<string, unknown> | undefined;
 
-  useEffect(() => {
-    fetch(API_URL)
-      .then((r) => r.json())
-      .then((data: ContentItem[]) => setHero(data[0] || null))
-      .catch(() => setHero(null));
-  }, []);
-
-  const d = hero?.data as Record<string, unknown> | undefined;
   const greeting = String(d?.greeting || 'Hello, I am');
   const title = String(d?.title || 'Alex Developer');
   const subtitle = String(
     d?.subtitle || 'Full-stack developer crafting modern web experiences with React, Node.js, and TypeScript.'
   );
   const buttons = parseButtons(d?.buttons);
-  const backgroundImage = d?.backgroundImage ? String(d.backgroundImage) : d?.backgroundImage ? String(d.backgroundimage) : null;
+  const backgroundImage = d?.backgroundImage
+    ? String(d.backgroundImage)
+    : d?.backgroundimage
+      ? String(d.backgroundimage)
+      : null;
 
   return (
-    <section className="hero"
-      style={backgroundImage ? {
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      } : undefined}
-    >
-
-      {
-        backgroundImage && (
-          <div className="hero-banner"></div>
-        )
+    <section
+      className="hero"
+      style={
+        backgroundImage
+          ? {
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+          : undefined
       }
+    >
+      {backgroundImage && <div className="hero-banner" />}
 
       <div className="hero-container">
         <p className="hero-greeting">{greeting}</p>
@@ -78,7 +72,11 @@ export default function Hero() {
             <a
               key={i}
               href={btn.link}
-              className={btn.style === 'primary' ? 'btn btn-primary' : `btn btn-secondary ${backgroundImage ? 'bg-text' : ''}`}
+              className={
+                btn.style === 'primary'
+                  ? 'btn btn-primary'
+                  : `btn btn-secondary ${backgroundImage ? 'bg-text' : ''}`
+              }
             >
               {btn.label}
             </a>

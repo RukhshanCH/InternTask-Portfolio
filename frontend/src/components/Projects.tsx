@@ -1,38 +1,27 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { FaGlobe, FaGithub, FaInstagram, FaFacebook, FaPalette, FaLinkedin, FaComment } from 'react-icons/fa';
 import type { ContentItem } from '../index';
 import ImageCarousel from './Carousel';
 
-const API_URL = 'http://localhost:3001/api/content/project?status=published&sort=order';
+interface ProjectsProps {
+  items?: ContentItem[];
+}
 
-export default function Projects() {
-  const [projects, setProjects] = useState<ContentItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function Projects({ items = [] }: ProjectsProps) {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
-  useEffect(() => {
-    fetch(API_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: ContentItem[]) => setProjects(data))
-      .catch((err) => console.error('Failed to load projects:', err))
-      .finally(() => setLoading(false));
-  }, []);
-
   const categories = useMemo(() => {
     const set = new Set<string>();
-    projects.forEach((p) => {
+    items.forEach((p) => {
       const cat = String((p.data as Record<string, unknown>).category || '').trim();
       if (cat) set.add(cat);
     });
     return ['All', ...Array.from(set).sort()];
-  }, [projects]);
+  }, [items]);
 
   const filtered = useMemo(() => {
-    let result = projects;
+    let result = items;
     if (activeCategory !== 'All') {
       result = result.filter((p) => {
         const cat = String((p.data as Record<string, unknown>).category || '').trim();
@@ -43,19 +32,9 @@ export default function Projects() {
       result = result.filter((p) => Boolean((p.data as Record<string, unknown>).featured));
     }
     return result;
-  }, [projects, activeCategory, showFeaturedOnly]);
+  }, [items, activeCategory, showFeaturedOnly]);
 
-  if (loading) {
-    return (
-      <section className="projects section">
-        <div className="container">
-          <p className="loading-text">Loading projects...</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (projects.length === 0) {
+  if (items.length === 0) {
     return (
       <section id="projects" className="projects section">
         <div className="container">
@@ -107,7 +86,6 @@ export default function Projects() {
             const description = String(d.description || '');
             const technologies = (d.technologies as string[]) || [];
 
-            // Support multiple images: images (array) or single imageUrl/imageurl
             let images: string[] = [];
             if (d.images && Array.isArray(d.images)) {
               images = d.images as string[];
