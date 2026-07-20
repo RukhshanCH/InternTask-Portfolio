@@ -100,7 +100,7 @@ function AppContent({
               <nav className="cms-nav">
                 <Link to="/admin" className="cms-nav-link">📊 Dashboard</Link>
                 <Link to="/admin/content-types" className="cms-nav-link">🏗️ Content Types</Link>
-                <Link to="/admin/content/theme" className="cms-nav-link">🎨 Theme</Link>
+                <Link to="/admin/content/theme" className="cms-nav-link">🎨 Themes</Link>
                 <Link to="/admin/content/hero" className="cms-nav-link">📄 Hero</Link>
                 <Link to="/admin/content/about" className="cms-nav-link">👨‍💻 About</Link>
                 <Link to="/admin/content/project" className="cms-nav-link">🚀 Projects</Link>
