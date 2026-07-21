@@ -76,95 +76,7 @@ const Page = mongoose.model('Page', pageSchema);
 // ─── SEED DEFAULT CONTENT TYPES ───
 async function seedDefaults() {
   const types = [
-    {
-      name: 'project',
-      label: 'Project',
-      icon: '🚀',
-      fields: [
-        // Basic info
-        { name: 'title', label: 'Title', type: 'text', required: true },
-        { name: 'description', label: 'Description', type: 'textarea' },
-        {
-          name: 'category',
-          label: 'Category',
-          type: 'select',
-          options: ['Web Development', 'Mobile App', 'AI/ML', 'Design', 'DevOps', 'Other']
-        },
-        { name: 'technologies', label: 'Technologies', type: 'array' },
 
-        // Images grouped together
-        { name: 'imageUrl', label: 'Image URL', type: 'image' },
-        { name: 'images', label: 'Images', type: 'array' },  // ← moved here
-
-        // Project links
-        { name: 'liveUrl', label: 'Live URL', type: 'url' },
-        { name: 'githubUrl', label: 'GitHub URL', type: 'url' },
-
-        // Display controls
-        { name: 'featured', label: 'Featured', type: 'boolean', defaultValue: false },
-        { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 },
-
-        // Social URLs — all at the bottom
-        { name: 'instaUrl', label: 'Instagram URL', type: 'url' },
-        { name: 'fbUrl', label: 'Facebook URL', type: 'url' },
-        { name: 'behanceUrl', label: 'Behance URL', type: 'url' },
-        { name: 'linkedinUrl', label: 'LinkedIn URL', type: 'url' },
-        { name: 'redditUrl', label: 'Reddit URL', type: 'url' }  // ← added
-      ]
-    },
-    {
-      name: 'skill',
-      label: 'Skill',
-      icon: '⭐',
-      fields: [
-        { name: 'name', label: 'Skill Name', type: 'text', required: true },
-        { name: 'level', label: 'Level', type: 'text' },
-        { name: 'percentage', label: 'Percentage', type: 'number', defaultValue: 75 },
-        { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 }
-      ]
-    },
-    {
-      name: 'about',
-      label: 'About',
-      icon: '👤',
-      fields: [
-        { name: 'heading', label: 'Heading', type: 'text', required: true, defaultValue: 'About Me' },
-        { name: 'paragraphs', label: 'Paragraphs', type: 'array' },
-        { name: 'stats', label: 'Stats', type: 'array' },
-        { name: 'imageUrl', label: 'Profile Image', type: 'image' }
-      ]
-    },
-    {
-      name: 'hero',
-      label: 'Hero',
-      icon: '🏠',
-      fields: [
-        { name: 'greeting', label: 'Greeting', type: 'text', defaultValue: 'Hello, I am' },
-        { name: 'title', label: 'Title', type: 'text', required: true },
-        { name: 'subtitle', label: 'Subtitle', type: 'textarea' },
-        { name: 'buttons', label: 'Buttons', type: 'array' },
-        { name: 'backgroungImage', label: 'Background Image', type: 'image' }
-      ]
-    },
-    {
-      name: "contact",
-      label: "Contact",
-      icon: "📧",
-      fields: [
-        { name: "heading", label: "Heading", type: "text", required: true, defaultValue: "Get In Touch" },
-        { name: "subheading", label: "Subheading", type: "textarea", defaultValue: "Have a project in mind? Let's work together." },
-        { name: "email", label: "Email", type: "text", defaultValue: "alex@developer.com" },
-        { name: "phone", label: "Phone", type: "text" },
-        { name: "location", label: "Location", type: "text", defaultValue: "San Francisco, CA" },
-        { name: "linkedin", label: "LinkedIn URL", type: "url" },
-        { name: "instagram", label: "Instagram URL", type: "url" },
-        { name: "facebook", label: "Facebook URL", type: "url" },
-        { name: "reddit", label: "Reddit URL", type: "url" },
-        { name: "whatsapp", label: "Whatsapp Number", type: "text" },
-        { name: "whatsappMessage", label: "Whatsapp Message", type: "text", defaultValue: "Hello, I would like to work with you." },
-        { name: "formEnabled", label: "Enable Contact Form", type: "boolean", defaultValue: true }
-      ]
-    },
     {
       name: 'theme',
       label: 'Theme',
@@ -210,12 +122,269 @@ async function seedDefaults() {
         { name: 'enableAnimations', label: 'Enable Animations', type: 'boolean', defaultValue: true },
         { name: 'darkMode', label: 'Dark Mode', type: 'boolean', defaultValue: false },
       ]
+    },
+    {
+      name: 'hero',
+      label: 'Hero',
+      icon: '🏠',
+      fields: [
+        { name: 'greeting', label: 'Greeting', type: 'text', defaultValue: 'Hello, I am' },
+        { name: 'title', label: 'Title', type: 'text', required: true },
+        { name: 'subtitle', label: 'Subtitle', type: 'textarea' },
+        { name: 'buttons', label: 'Buttons', type: 'array' },
+        { name: 'backgroungImage', label: 'Background Image', type: 'image' }
+      ]
+    },
+    {
+      name: 'about',
+      label: 'About',
+      icon: '👤',
+      fields: [
+        { name: 'heading', label: 'Heading', type: 'text', required: true, defaultValue: 'About Me' },
+        { name: 'paragraphs', label: 'Paragraphs', type: 'array' },
+        { name: 'stats', label: 'Stats', type: 'array' },
+        { name: 'imageUrl', label: 'Profile Image', type: 'image' }
+      ]
+    },
+    {
+      name: 'project',
+      label: 'Project',
+      icon: '🚀',
+      fields: [
+        // Basic info
+        { name: 'title', label: 'Title', type: 'text', required: true },
+        { name: 'description', label: 'Description', type: 'textarea' },
+        {
+          name: 'category',
+          label: 'Category',
+          type: 'select',
+          options: ['Web Development', 'Mobile App', 'AI/ML', 'Design', 'DevOps', 'Other']
+        },
+        { name: 'technologies', label: 'Technologies', type: 'array' },
+
+        // Images grouped together
+        { name: 'imageUrl', label: 'Image URL', type: 'image' },
+        { name: 'images', label: 'Images', type: 'array' },
+
+        // Project links
+        { name: 'liveUrl', label: 'Live URL', type: 'url' },
+        { name: 'githubUrl', label: 'GitHub URL', type: 'url' },
+
+        // Display controls
+        { name: 'featured', label: 'Featured', type: 'boolean', defaultValue: false },
+        { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 },
+
+        // Social URLs — all at the bottom
+        { name: 'instaUrl', label: 'Instagram URL', type: 'url' },
+        { name: 'fbUrl', label: 'Facebook URL', type: 'url' },
+        { name: 'behanceUrl', label: 'Behance URL', type: 'url' },
+        { name: 'linkedinUrl', label: 'LinkedIn URL', type: 'url' },
+        { name: 'redditUrl', label: 'Reddit URL', type: 'url' }
+      ]
+    },
+    {
+      name: 'skill',
+      label: 'Skill',
+      icon: '⭐',
+      fields: [
+        { name: 'name', label: 'Skill Name', type: 'text', required: true },
+        { name: 'level', label: 'Level', type: 'text' },
+        { name: 'percentage', label: 'Percentage', type: 'number', defaultValue: 75 },
+        { name: 'order', label: 'Display Order', type: 'number', defaultValue: 0 }
+      ]
+    },
+    {
+      name: "contact",
+      label: "Contact",
+      icon: "📧",
+      fields: [
+        { name: "heading", label: "Heading", type: "text", required: true, defaultValue: "Get In Touch" },
+        { name: "subheading", label: "Subheading", type: "textarea", defaultValue: "Have a project in mind? Let's work together." },
+        { name: "email", label: "Email", type: "text", defaultValue: "alex@developer.com" },
+        { name: "phone", label: "Phone", type: "text" },
+        { name: "location", label: "Location", type: "text", defaultValue: "San Francisco, CA" },
+        { name: "linkedin", label: "LinkedIn URL", type: "url" },
+        { name: "instagram", label: "Instagram URL", type: "url" },
+        { name: "facebook", label: "Facebook URL", type: "url" },
+        { name: "reddit", label: "Reddit URL", type: "url" },
+        { name: "whatsapp", label: "Whatsapp Number", type: "text" },
+        { name: "whatsappMessage", label: "Whatsapp Message", type: "text", defaultValue: "Hello, I would like to work with you." },
+        { name: "formEnabled", label: "Enable Contact Form", type: "boolean", defaultValue: true }
+      ]
+    },
+  ];
+
+  const defaultThemes = [
+    {
+      contentType: 'theme',
+      slug: 'default',
+      status: 'published',
+      order: 1,
+      data: {
+        name: 'Default',
+        isActive: true,
+        primary: '#3b82f6',
+        primaryDark: '#2563eb',
+        secondary: '#8b5cf6',
+        accent: '#4ade80',
+        accentSoft: '#a6ffc5',
+        accentBg: '#f0fdf4',
+        dark: '#1e1b4b',
+        light: '#ffffff',
+        gray: '#e2e8f0',
+        grayWarm: '#f1f5f9',
+        text: '#334155',
+        textLight: '#64748b',
+        radius: '12',
+        maxWidth: '1200',
+        fontFamily: 'system',
+        gradientDirection: '135deg',
+        cardStyle: 'rounded',
+        buttonStyle: 'gradient',
+        enableAnimations: true,
+        darkMode: false,
+        featured: true,
+      }
+    },
+    {
+      contentType: 'theme',
+      slug: 'warm-sunset',
+      status: 'published',
+      order: 2,
+      data: {
+        name: 'Warm Sunset',
+        isActive: false,
+        primary: '#f97316',
+        primaryDark: '#ea580c',
+        secondary: '#db2777',
+        accent: '#fbbf24',
+        accentSoft: '#f8e38f',
+        accentBg: '#fffbeb',
+        dark: '#431407',
+        light: '#fff7ed',
+        gray: '#fed7aa',
+        grayWarm: '#ffedd5',
+        text: '#431407',
+        textLight: '#9a3412',
+        radius: '16',
+        maxWidth: '1200',
+        fontFamily: 'system',
+        gradientDirection: '135deg',
+        cardStyle: 'rounded',
+        buttonStyle: 'gradient',
+        enableAnimations: true,
+        darkMode: false,
+        featured: false,
+      }
+    },
+    {
+      contentType: 'theme',
+      slug: 'forest-nature',
+      status: 'published',
+      order: 3,
+      data: {
+        name: 'Forest Nature',
+        isActive: false,
+        primary: '#15803d',
+        primaryDark: '#166534',
+        secondary: '#0d9488',
+        accent: '#84cc16',
+        accentSoft: '#e1fea7',
+        accentBg: '#f0fdf4',
+        dark: '#052e16',
+        light: '#f7fee7',
+        gray: '#bbf7d0',
+        grayWarm: '#dcfce7',
+        text: '#14532d',
+        textLight: '#15803d',
+        radius: '14',
+        maxWidth: '1200',
+        fontFamily: 'system',
+        gradientDirection: '160deg',
+        cardStyle: 'rounded',
+        buttonStyle: 'solid',
+        enableAnimations: true,
+        darkMode: false,
+        featured: false,
+      }
+    },
+    {
+      contentType: 'theme',
+      slug: 'cyberpunk-dark',
+      status: 'published',
+      order: 4,
+      data: {
+        name: 'Cyberpunk Dark',
+        isActive: false,
+        primary: '#a855f7',
+        primaryDark: '#7e22ce',
+        secondary: '#06b6d4',
+        accent: '#f472b6',
+        accentSoft: '#fce7f3',
+        accentBg: '#2e1065',
+        dark: '#0f0f1a',
+        light: '#1a1a2e',
+        gray: '#2d2d44',
+        grayWarm: '#252538',
+        text: '#e2e8f0',
+        textLight: '#94a3b8',
+        radius: '8',
+        maxWidth: '1280',
+        fontFamily: 'system',
+        gradientDirection: '145deg',
+        cardStyle: 'glass',
+        buttonStyle: 'glow',
+        enableAnimations: true,
+        darkMode: true,
+        featured: false,
+      }
+    },
+    {
+      contentType: 'theme',
+      slug: 'midnight-elegant',
+      status: 'published',
+      order: 5,
+      data: {
+        name: 'Midnight Elegant',
+        isActive: false,
+        primary: '#e2e8f0',
+        primaryDark: '#cbd5e1',
+        secondary: '#94a3b8',
+        accent: '#fbbf24',
+        accentSoft: '#fef3c7',
+        accentBg: '#1e293b',
+        dark: '#020617',
+        light: '#0f172a',
+        gray: '#334155',
+        grayWarm: '#1e293b',
+        text: '#f1f5f9',
+        textLight: '#94a3b8',
+        radius: '6',
+        maxWidth: '1200',
+        fontFamily: 'system',
+        gradientDirection: '180deg',
+        cardStyle: 'flat',
+        buttonStyle: 'outline',
+        enableAnimations: true,
+        darkMode: true,
+        featured: false,
+      }
     }
   ];
+
+  // Seed content types
   for (const type of types) {
     const existing = await ContentType.findOne({ name: type.name });
     if (!existing) {
       await ContentType.create(type);
+    }
+  }
+
+  // Seed default themes
+  for (const theme of defaultThemes) {
+    const existing = await Content.findOne({ contentType: 'theme', slug: theme.slug });
+    if (!existing) {
+      await Content.create(theme);
     }
   }
 }
