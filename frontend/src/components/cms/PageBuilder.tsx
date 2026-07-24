@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../layouts/AdminLayout';
-import { updateSiteSettings } from '../../utils/supabase_multitenants';
+import { updateSiteSettings } from '../../utils/supabase';
 
 const AVAILABLE_SECTIONS = [
   { id: 'hero', label: '🏠 Hero' },

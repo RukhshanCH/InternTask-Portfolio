@@ -13,7 +13,7 @@ import {
   signOut,
   type Portfolio,
   type Invitation 
-} from '../utils/supabase_multitenants';
+} from '../utils/supabase';
 
 export default function DashboardPage() {
   const navigate = useNavigate();

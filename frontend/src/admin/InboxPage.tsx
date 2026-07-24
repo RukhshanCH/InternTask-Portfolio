@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../layouts/AdminLayout';
-import { getContactSubmissions, markSubmissionAsRead } from '../utils/supabase_multitenants';
+import { getContactSubmissions, markSubmissionAsRead } from '../utils/supabase';
 import type { ContactSubmission } from '../utils/supabase';
 
 export default function InboxPage() {

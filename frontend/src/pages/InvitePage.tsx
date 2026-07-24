@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { acceptInvitation, getCurrentUser, signIn, signUp } from '../utils/supabase_multitenants';
+import { acceptInvitation, getCurrentUser, signIn, signUp } from '../utils/supabase';
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();

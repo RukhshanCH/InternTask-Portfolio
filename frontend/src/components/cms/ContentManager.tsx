@@ -26,7 +26,7 @@ import {
   createSkill,
   deleteProject,
   deleteSkill,
-} from '../../utils/supabase_multitenants';
+} from '../../utils/supabase';
 
 // Content type configurations
 const CONTENT_CONFIG: Record<string, {

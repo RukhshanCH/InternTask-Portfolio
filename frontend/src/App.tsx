@@ -5,9 +5,9 @@
 
 import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
 import { useState, useEffect, createContext, useContext } from 'react';
-import { supabase } from './utils/supabase_multitenants';
-import type { Theme, PortfolioData } from './utils/supabase_multitenants';
-import { getPublicPortfolio, getSession } from './utils/supabase_multitenants';
+import { supabase } from './utils/supabase';
+import type { Theme, PortfolioData } from './utils/supabase';
+import { getPublicPortfolio, getSession } from './utils/supabase';
 
 // ─── COMPONENTS ───
 import Navbar from './components/Navbar';

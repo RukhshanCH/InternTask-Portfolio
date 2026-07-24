@@ -18,7 +18,7 @@ import {
   type PortfolioMember,
   type Invitation,
   type Theme,
-} from '../utils/supabase_multitenants';
+} from '../utils/supabase';
 
 // ─── ADMIN CONTEXT ───
 

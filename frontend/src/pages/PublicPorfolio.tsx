@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getPublicPortfolio, getWhatsAppLink } from '../utils/supabase_multitenants';
-import type { PortfolioData } from '../utils/supabase_multitenants';
+import { getPublicPortfolio, getWhatsAppLink } from '../utils/supabase';
+import type { PortfolioData } from '../utils/supabase';
 
 export default function PublicPortfolio() {
   const { slug } = useParams<{ slug: string }>();
@@ -236,7 +236,7 @@ function ContactForm({ portfolioId }: { portfolioId: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    const { submitContactForm } = await import('../utils/supabase_multitenants');
+    const { submitContactForm } = await import('../utils/supabase');
     await submitContactForm(portfolioId, formData.name, formData.email, formData.message, formData.subject);
     setSubmitting(false);
     setSubmitted(true);

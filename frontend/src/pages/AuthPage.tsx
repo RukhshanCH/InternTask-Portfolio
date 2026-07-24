@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { signIn, signUp, getSession } from '../utils/supabase_multitenants';
+import { signIn, signUp, getSession } from '../utils/supabase';
 
 export default function AuthPage() {
   const navigate = useNavigate();
