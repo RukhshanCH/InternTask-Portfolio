@@ -3,45 +3,98 @@ import { FaGlobe, FaGithub, FaInstagram, FaFacebook, FaPalette, FaLinkedin, FaCo
 import type { ContentItem } from '../index';
 import ImageCarousel from './Carousel';
 
+// ─── TYPES ───
+
+// Supabase flat schema (snake_case)
+export interface SupabaseProject {
+  id: string;
+  title: string;
+  description: string;
+  image_url?: string;
+  images?: string[];
+  tags?: string[];
+  technologies?: string[];
+  category?: string;
+  github_url?: string;
+  live_url?: string;
+  insta_url?: string;
+  fb_url?: string;
+  behance_url?: string;
+  linkedin_url?: string;
+  reddit_url?: string;
+  is_active?: boolean;
+  featured?: boolean;
+  order_index?: number;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+// ─── HELPER: Normalize any project format → flat object ───
+function normalizeProjectData(item: ContentItem | SupabaseProject | null): Record<string, unknown> | null {
+  if (!item) return null;
+
+  // If it has a `data` property → legacy ContentItem wrapper
+  if ('data' in item && item.data && typeof item.data === 'object') {
+    return item.data as Record<string, unknown>;
+  }
+
+  // Otherwise → flat Supabase object (or already flat)
+  return item as Record<string, unknown>;
+}
+
+// ─── PROPS ───
+
 interface ProjectsProps {
-  items?: ContentItem[];
+  items?: (ContentItem | SupabaseProject | null)[];
 }
 
 export default function Projects({ items = [] }: ProjectsProps) {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
+  // Normalize all items to flat data objects
+  const normalizedItems = useMemo(() => {
+    return items
+      .map(normalizeProjectData)
+      .filter((d): d is Record<string, unknown> => d !== null);
+  }, [items]);
+
+  // Extract categories from normalized data
   const categories = useMemo(() => {
     const set = new Set<string>();
-    items.forEach((p) => {
-      const cat = String((p.data as Record<string, unknown>).category || '').trim();
+    normalizedItems.forEach((d) => {
+      const cat = String(d.category || '').trim();
       if (cat) set.add(cat);
     });
     return ['All', ...Array.from(set).sort()];
-  }, [items]);
+  }, [normalizedItems]);
 
+  // Filter projects
   const filtered = useMemo(() => {
-    let result = items;
+    let result = normalizedItems;
+
     if (activeCategory !== 'All') {
-      result = result.filter((p) => {
-        const cat = String((p.data as Record<string, unknown>).category || '').trim();
+      result = result.filter((d) => {
+        const cat = String(d.category || '').trim();
         return cat === activeCategory;
       });
     }
-    if (showFeaturedOnly) {
-      result = result.filter((p) => Boolean((p.data as Record<string, unknown>).featured));
-    }
-    return result;
-  }, [items, activeCategory, showFeaturedOnly]);
 
-  if (items.length === 0) {
+    if (showFeaturedOnly) {
+      result = result.filter((d) => Boolean(d.featured));
+    }
+
+    return result;
+  }, [normalizedItems, activeCategory, showFeaturedOnly]);
+
+  if (normalizedItems.length === 0) {
     return (
       <section id="projects" className="projects section">
         <div className="container">
           <h2 className="section-title">Featured Projects</h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-light)' }}>
+          <p className="empty-state">
             No projects yet.{' '}
-            <a href="/admin/content/project" style={{ color: 'var(--primary)' }}>
+            <a href="/admin/content/project">
               Add some in the admin panel
             </a>
             .
@@ -80,33 +133,37 @@ export default function Projects({ items = [] }: ProjectsProps) {
         </div>
 
         <div className="projects-grid">
-          {filtered.map((project, index) => {
-            const d = project.data as Record<string, unknown>;
+          {filtered.map((d, index) => {
+            const id = String(d.id || index);
             const title = String(d.title || 'Untitled');
             const description = String(d.description || '');
-            const technologies = (d.technologies as string[]) || [];
+            const technologies = (d.technologies as string[]) || (d.tags as string[]) || [];
+            const category = String(d.category || '');
+            const isFeatured = Boolean(d.featured);
 
+            // Images: support both `images` array and legacy `imageUrl` / `imageurl`
             let images: string[] = [];
             if (d.images && Array.isArray(d.images)) {
               images = d.images as string[];
+            } else if (d.image_url) {
+              images = [String(d.image_url)];
             } else if (d.imageUrl) {
               images = [String(d.imageUrl)];
             } else if (d.imageurl) {
               images = [String(d.imageurl)];
             }
 
-            const liveUrl = d.liveUrl ? String(d.liveUrl) : d.liveurl ? String(d.liveurl) : null;
-            const githubUrl = d.githubUrl ? String(d.githubUrl) : d.githuburl ? String(d.githuburl) : null;
-            const instaUrl = d.instaUrl ? String(d.instaUrl) : d.instaurl ? String(d.instaurl) : null;
-            const fbUrl = d.fbUrl ? String(d.fbUrl) : d.fburl ? String(d.fburl) : null;
-            const behanceUrl = d.behanceUrl ? String(d.behanceUrl) : d.behanceurl ? String(d.behanceurl) : null;
-            const linkedinUrl = d.linkedinUrl ? String(d.linkedinUrl) : d.linkedinurl ? String(d.linkedinurl) : null;
-            const redditUrl = d.redditUrl ? String(d.redditUrl) : d.redditurl ? String(d.redditurl) : null;
-            const category = String(d.category || '');
-            const isFeatured = Boolean(d.featured);
+            // Links: support both snake_case (Supabase) and camelCase (legacy)
+            const liveUrl = d.live_url ? String(d.live_url) : d.liveUrl ? String(d.liveUrl) : null;
+            const githubUrl = d.github_url ? String(d.github_url) : d.githubUrl ? String(d.githubUrl) : null;
+            const instaUrl = d.insta_url ? String(d.insta_url) : d.instaUrl ? String(d.instaUrl) : null;
+            const fbUrl = d.fb_url ? String(d.fb_url) : d.fbUrl ? String(d.fbUrl) : null;
+            const behanceUrl = d.behance_url ? String(d.behance_url) : d.behanceUrl ? String(d.behanceUrl) : null;
+            const linkedinUrl = d.linkedin_url ? String(d.linkedin_url) : d.linkedinUrl ? String(d.linkedinUrl) : null;
+            const redditUrl = d.reddit_url ? String(d.reddit_url) : d.redditUrl ? String(d.redditUrl) : null;
 
             return (
-              <article key={project._id} className={`project-card ${isFeatured ? 'project-featured' : ''}`}>
+              <article key={id} className={`project-card ${isFeatured ? 'project-featured' : ''}`}>
                 <div className="project-image">
                   <ImageCarousel images={images} title={title} index={index} />
 
@@ -128,37 +185,37 @@ export default function Projects({ items = [] }: ProjectsProps) {
 
                   <div className="project-links">
                     {liveUrl && (
-                      <a href={liveUrl} className="link-primary" target="_blank" rel="noreferrer" title='Live Demo'>
+                      <a href={liveUrl} className="link-primary" target="_blank" rel="noreferrer" title="Live Demo">
                         <FaGlobe size={18} />
                       </a>
                     )}
                     {githubUrl && (
-                      <a href={githubUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Github'>
+                      <a href={githubUrl} className="link-secondary" target="_blank" rel="noreferrer" title="GitHub">
                         <FaGithub size={18} />
                       </a>
                     )}
                     {instaUrl && (
-                      <a href={instaUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Instagram'>
+                      <a href={instaUrl} className="link-secondary" target="_blank" rel="noreferrer" title="Instagram">
                         <FaInstagram size={18} />
                       </a>
                     )}
                     {fbUrl && (
-                      <a href={fbUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Facebook'>
+                      <a href={fbUrl} className="link-secondary" target="_blank" rel="noreferrer" title="Facebook">
                         <FaFacebook size={18} />
                       </a>
                     )}
                     {behanceUrl && (
-                      <a href={behanceUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Behance'>
+                      <a href={behanceUrl} className="link-secondary" target="_blank" rel="noreferrer" title="Behance">
                         <FaPalette size={18} />
                       </a>
                     )}
                     {linkedinUrl && (
-                      <a href={linkedinUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Linkedin'>
+                      <a href={linkedinUrl} className="link-secondary" target="_blank" rel="noreferrer" title="LinkedIn">
                         <FaLinkedin size={18} />
                       </a>
                     )}
                     {redditUrl && (
-                      <a href={redditUrl} className="link-secondary" target="_blank" rel="noreferrer" title='Reddit'>
+                      <a href={redditUrl} className="link-secondary" target="_blank" rel="noreferrer" title="Reddit">
                         <FaComment size={18} />
                       </a>
                     )}

@@ -1,172 +1,322 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaTimes, FaUpload, FaImage, FaGripVertical } from 'react-icons/fa';
-import type { ContentType, ContentItem } from '../../index';
-import ThemePreview from './ThemePreview';
+import { FaPlus, FaTrash, FaEdit, FaTimes } from 'react-icons/fa';
+import { supabase } from '../../utils/supabase';
 
-const API_BASE: string = (import.meta as any).env?.VITE_APP_API_URL + '/api';
+// ─── TABLE CONFIG ───
+// Maps content type names to their Supabase table names and fields
+
+interface FieldConfig {
+  name: string;
+  label: string;
+  type: 'text' | 'textarea' | 'number' | 'boolean' | 'image' | 'images' | 'array' | 'select';
+  required?: boolean;
+  options?: string[];
+  placeholder?: string;
+}
+
+interface TableConfig {
+  tableName: string;
+  label: string;
+  icon: string;
+  fields: FieldConfig[];
+  isSingle?: boolean; // true for hero, about, contact (only one row)
+}
+
+const TABLE_MAP: Record<string, TableConfig> = {
+  project: {
+    tableName: 'projects',
+    label: 'Projects',
+    icon: '🚀',
+    fields: [
+      { name: 'title', label: 'Title', type: 'text', required: true },
+      { name: 'description', label: 'Description', type: 'textarea', required: true },
+      { name: 'category', label: 'Category', type: 'select', options: ['Web', 'Mobile', 'Design', 'Other'] },
+      { name: 'image_url', label: 'Cover Image', type: 'image' },
+      { name: 'images', label: 'Gallery Images', type: 'images' },
+      { name: 'technologies', label: 'Technologies', type: 'array', placeholder: 'React, TypeScript, Node.js' },
+      { name: 'github_url', label: 'GitHub URL', type: 'text' },
+      { name: 'live_url', label: 'Live URL', type: 'text' },
+      { name: 'insta_url', label: 'Instagram', type: 'text' },
+      { name: 'fb_url', label: 'Facebook', type: 'text' },
+      { name: 'behance_url', label: 'Behance', type: 'text' },
+      { name: 'linkedin_url', label: 'LinkedIn', type: 'text' },
+      { name: 'reddit_url', label: 'Reddit', type: 'text' },
+      { name: 'featured', label: 'Featured', type: 'boolean' },
+      { name: 'is_active', label: 'Active', type: 'boolean' },
+      { name: 'order_index', label: 'Sort Order', type: 'number' },
+    ],
+  },
+  hero: {
+    tableName: 'hero',
+    label: 'Hero',
+    icon: '📄',
+    isSingle: true,
+    fields: [
+      { name: 'greeting', label: 'Greeting', type: 'text', placeholder: 'Hello, I am' },
+      { name: 'title', label: 'Title', type: 'text', required: true, placeholder: 'Alex Developer' },
+      { name: 'subtitle', label: 'Subtitle', type: 'textarea' },
+      { name: 'background_image', label: 'Background Image', type: 'image' },
+      { name: 'is_active', label: 'Active', type: 'boolean' },
+      { name: 'order_index', label: 'Sort Order', type: 'number' },
+    ],
+  },
+  about: {
+    tableName: 'about',
+    label: 'About',
+    icon: '👨‍💻',
+    isSingle: true,
+    fields: [
+      { name: 'heading', label: 'Heading', type: 'text' },
+      { name: 'bio', label: 'Bio', type: 'textarea' },
+      { name: 'image_url', label: 'Image', type: 'image' },
+      { name: 'is_active', label: 'Active', type: 'boolean' },
+      { name: 'order_index', label: 'Sort Order', type: 'number' },
+    ],
+  },
+  skill: {
+    tableName: 'skills',
+    label: 'Skills',
+    icon: '⭐',
+    fields: [
+      { name: 'name', label: 'Skill Name', type: 'text', required: true },
+      { name: 'level', label: 'Level (0-100)', type: 'number' },
+      { name: 'category', label: 'Category', type: 'select', options: ['Frontend', 'Backend', 'Database', 'DevOps', 'Design', 'Other'] },
+      { name: 'icon', label: 'Icon', type: 'text', placeholder: 'react, node, etc.' },
+      { name: 'is_active', label: 'Active', type: 'boolean' },
+      { name: 'order_index', label: 'Sort Order', type: 'number' },
+    ],
+  },
+  contact: {
+    tableName: 'contact',
+    label: 'Contact',
+    icon: '📧',
+    isSingle: true,
+    fields: [
+      { name: 'heading', label: 'Heading', type: 'text' },
+      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'email', label: 'Email', type: 'text' },
+      { name: 'phone', label: 'Phone', type: 'text' },
+      { name: 'location', label: 'Location', type: 'text' },
+      { name: 'whatsapp_number', label: 'WhatsApp Number', type: 'text' },
+      { name: 'whatsapp_message', label: 'WhatsApp Message', type: 'text' },
+      { name: 'linkedin_url', label: 'LinkedIn', type: 'text' },
+      { name: 'github_url', label: 'GitHub', type: 'text' },
+      { name: 'twitter_url', label: 'Twitter', type: 'text' },
+      { name: 'instagram_url', label: 'Instagram', type: 'text' },
+      { name: 'facebook_url', label: 'Facebook', type: 'text' },
+      { name: 'reddit_url', label: 'Reddit', type: 'text' },
+      { name: 'form_enabled', label: 'Show Form', type: 'boolean' },
+      { name: 'is_active', label: 'Active', type: 'boolean' },
+      { name: 'order_index', label: 'Sort Order', type: 'number' },
+    ],
+  },
+  theme: {
+    tableName: 'themes',
+    label: 'Themes',
+    icon: '🎨',
+    fields: [
+      { name: 'name', label: 'Name', type: 'text', required: true },
+      { name: 'slug', label: 'Slug', type: 'text', required: true },
+      { name: 'color_primary', label: 'Primary Color', type: 'text' },
+      { name: 'color_secondary', label: 'Secondary Color', type: 'text' },
+      { name: 'color_accent', label: 'Accent Color', type: 'text' },
+      { name: 'color_dark', label: 'Dark Color', type: 'text' },
+      { name: 'color_light', label: 'Light Color', type: 'text' },
+      { name: 'color_text', label: 'Text Color', type: 'text' },
+      { name: 'border_radius', label: 'Border Radius', type: 'number' },
+      { name: 'max_width', label: 'Max Width', type: 'number' },
+      { name: 'font_family', label: 'Font Family', type: 'select', options: ['system', 'serif', 'mono'] },
+      { name: 'card_style', label: 'Card Style', type: 'select', options: ['rounded', 'glass', 'flat'] },
+      { name: 'button_style', label: 'Button Style', type: 'select', options: ['gradient', 'solid', 'glow', 'outline'] },
+      { name: 'dark_mode', label: 'Dark Mode', type: 'boolean' },
+      { name: 'is_active', label: 'Active', type: 'boolean' },
+      { name: 'is_featured', label: 'Featured', type: 'boolean' },
+      { name: 'order_index', label: 'Sort Order', type: 'number' },
+    ],
+  },
+};
+
+// ─── COMPONENT ───
 
 export default function ContentManager() {
   const { typeName } = useParams<{ typeName: string }>();
+  const config = typeName ? TABLE_MAP[typeName] : null;
 
-  const [contentType, setContentType] = useState<ContentType | null>(null);
-  const [items, setItems] = useState<ContentItem[]>([]);
+  const [items, setItems] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
-  const [uploadingField, setUploadingField] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
 
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const [previewItem, setPreviewItem] = useState<ContentItem | null>(null);
-
-  // Drag state
-  const [dragOverField, setDragOverField] = useState<string | null>(null);
-  const [draggedImage, setDraggedImage] = useState<{ field: string; index: number } | null>(null);
-
-  const fetchContentType = useCallback(async () => {
-    if (!typeName) return;
-    try {
-      const res = await fetch(`${API_BASE}/content-types`);
-      const types: ContentType[] = await res.json();
-      const ct = types.find(t => t.name === typeName);
-      setContentType(ct || null);
-      if (!ct) setError(`Content type "${typeName}" not found`);
-    } catch {
-      setError('Failed to load content type');
-    }
-  }, [typeName]);
-
+  // ─── FETCH ───
   const loadItems = useCallback(async () => {
-    if (!typeName) return;
+    if (!config) return;
     setLoading(true);
     setError(null);
+
     try {
-      const res = await fetch(`${API_BASE}/content/${typeName}?status=all&sort=order`);
-      const data: ContentItem[] = await res.json();
-      setItems(data);
-    } catch {
-      setError('Failed to load items');
+      let query = supabase.from(config.tableName).select('*');
+
+      if (config.isSingle) {
+        const { data, error } = await query.single();
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+        setItems(data ? [data] : []);
+      } else {
+        const { data, error } = await query.order('order_index', { ascending: true });
+        if (error) throw error;
+        setItems(data || []);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load items');
     } finally {
       setLoading(false);
     }
-  }, [typeName]);
+  }, [config]);
 
   useEffect(() => {
-    fetchContentType();
     loadItems();
-  }, [fetchContentType, loadItems]);
+  }, [loadItems]);
 
   const showAlert = (type: 'success' | 'error', text: string) => {
     setAlert({ type, text });
     setTimeout(() => setAlert(null), 3500);
   };
 
-  const getNextOrder = (): number => {
-    if (items.length === 0) return 1;
-    const orders = items.map(i => Number((i.data as Record<string, unknown>).order) || 0);
-    return Math.max(...orders) + 1;
-  };
-
-  const openModal = async (item?: ContentItem) => {
-    await fetchContentType();
-
+  // ─── FORM ───
+  const openModal = (item?: Record<string, unknown>) => {
     if (item) {
-      setFormData({ ...item.data });
-      setEditingId(item._id);
+      setFormData({ ...item });
+      setEditingId(String(item.id));
     } else {
       const defaults: Record<string, unknown> = {};
-      contentType?.fields.forEach(f => {
-        if (f.defaultValue !== undefined) defaults[f.name] = f.defaultValue;
+      config?.fields.forEach((f) => {
+        if (f.type === 'boolean') defaults[f.name] = true;
+        else if (f.type === 'number') defaults[f.name] = 0;
+        else if (f.type === 'array' || f.type === 'images') defaults[f.name] = [];
+        else defaults[f.name] = '';
       });
-      defaults.order = getNextOrder();
+      if (!config?.isSingle) {
+        defaults.order_index = items.length + 1;
+      }
       setFormData(defaults);
       setEditingId(null);
     }
     setIsModalOpen(true);
   };
 
-  const openAdd = () => openModal();
-  const openEdit = (item: ContentItem) => openModal(item);
+  const resetForm = () => {
+    setFormData({});
+    setEditingId(null);
+  };
 
+  // ─── SUBMIT ───
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!typeName) return;
+    if (!config) return;
+    setAlert(null);
 
+    // Clean up empty arrays
     const payload = { ...formData };
-    if (payload.order !== undefined) payload.order = Number(payload.order) || 0;
-
-    const url = editingId
-      ? `${API_BASE}/content/${typeName}/${editingId}`
-      : `${API_BASE}/content/${typeName}`;
-    const method = editingId ? 'PUT' : 'POST';
+    config.fields.forEach((f) => {
+      if ((f.type === 'array' || f.type === 'images') && !payload[f.name]) {
+        payload[f.name] = [];
+      }
+      if (f.type === 'number' && payload[f.name]) {
+        payload[f.name] = Number(payload[f.name]);
+      }
+    });
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error('Failed');
-
-      showAlert('success', editingId ? 'Updated!' : 'Created!');
-      setIsModalOpen(false);
-      loadItems();
-
-      // ── THEME-SPECIFIC LOGIC ──
-      if (typeName === 'theme' && formData.isActive) {
-        // 1. Unfeature all other themes
-        const themesRes = await fetch(`${API_BASE}/content/theme?status=all`);
-        const themes = await themesRes.json();
-        const others = themes.filter((t: ContentItem) => t._id !== editingId);
-
-        await Promise.all(
-          others.map((t: ContentItem) =>
-            fetch(`${API_BASE}/content/theme/${t._id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...t.data, isActive: false }), // ← was featured: false
-            })
-          )
-        );
-
-        // 2. Refresh the page so new theme CSS variables apply
-        window.location.reload();
+      if (editingId) {
+        const { error } = await supabase
+          .from(config.tableName)
+          .update(payload)
+          .eq('id', editingId);
+        if (error) throw error;
+        showAlert('success', 'Updated!');
+      } else {
+        const { error } = await supabase.from(config.tableName).insert(payload);
+        if (error) throw error;
+        showAlert('success', 'Created!');
       }
-    } catch {
-      showAlert('error', 'Request failed');
+
+      // Theme activation: deactivate others, then refresh
+      if (typeName === 'theme' && payload.is_active) {
+        const { error: themeError } = await supabase
+          .from('themes')
+          .update({ is_active: false })
+          .neq('id', editingId || '');
+        if (themeError) console.error('Theme deactivate error:', themeError);
+
+        // Apply theme immediately without full page reload
+        const { data: freshTheme } = await supabase
+          .from('themes')
+          .select('*')
+          .eq('id', editingId)
+          .single();
+
+        if (freshTheme) {
+          // Dispatch custom event so App.tsx can pick it up
+          window.dispatchEvent(new CustomEvent('theme-updated', { detail: freshTheme }));
+        }
+      }
+
+      setIsModalOpen(false);
+      resetForm();
+      await loadItems();
+      // Force refresh theme if we edited themes
+      if (typeName === 'theme') {
+        window.dispatchEvent(new CustomEvent('theme-needs-refresh'));
+      }
+    } catch (err: any) {
+      showAlert('error', err.message || 'Request failed');
     }
   };
 
+  // ─── DELETE ───
   const handleDelete = async (id: string) => {
+    if (!config) return;
     if (!window.confirm('Delete this item?')) return;
-    if (!typeName) return;
+
     try {
-      await fetch(`${API_BASE}/content/${typeName}/${id}`, { method: 'DELETE' });
+      const { error } = await supabase.from(config.tableName).delete().eq('id', id);
+      if (error) throw error;
       showAlert('success', 'Deleted!');
       loadItems();
-    } catch {
-      showAlert('error', 'Delete failed');
+    } catch (err: any) {
+      showAlert('error', err.message || 'Delete failed');
     }
   };
 
-  const toggleDeleteMode = () => {
-    setIsDeleteMode(prev => {
-      if (prev) setSelectedIds(new Set());
-      return !prev;
-    });
+  const handleBulkDelete = async () => {
+    if (!config || selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} items?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from(config.tableName)
+        .delete()
+        .in('id', Array.from(selectedIds));
+      if (error) throw error;
+      showAlert('success', `${selectedIds.size} deleted!`);
+      setSelectedIds(new Set());
+      setIsDeleteMode(false);
+      loadItems();
+    } catch (err: any) {
+      showAlert('error', err.message || 'Bulk delete failed');
+    }
   };
 
   const toggleSelection = (id: string) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -177,258 +327,63 @@ export default function ContentManager() {
     if (selectedIds.size === items.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(items.map(i => i._id)));
+      setSelectedIds(new Set(items.map((i) => String(i.id))));
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
-    if (!window.confirm(`Delete ${selectedIds.size} items?`)) return;
-    if (!typeName) return;
-
-    try {
-      await fetch(`${API_BASE}/content/${typeName}/bulk-delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: Array.from(selectedIds) }),
-      });
-      showAlert('success', `${selectedIds.size} deleted!`);
-      setSelectedIds(new Set());
-      setIsDeleteMode(false);
-      loadItems();
-    } catch {
-      showAlert('error', 'Bulk delete failed');
-    }
-  };
-
-  // ─── SINGLE FILE UPLOAD ───
-  const handleFileSelect = async (fieldName: string, file: File) => {
-    if (!file) return;
-    setUploadingField(fieldName);
-
-    const uploadData = new FormData();
-    uploadData.append('image', file);
-
-    try {
-      const res = await fetch(`${API_BASE}/upload`, {
-        method: 'POST',
-        body: uploadData,
-      });
-      const result = await res.json();
-      setFormData(prev => ({ ...prev, [fieldName]: result.url }));
-      showAlert('success', 'Image uploaded!');
-    } catch {
-      showAlert('error', 'Upload failed');
-    } finally {
-      setUploadingField(null);
-    }
-  };
-
-  // ─── MULTI-IMAGE UPLOAD ───
-  const handleMultiUpload = async (fieldName: string, files: FileList) => {
-    if (!files || files.length === 0) return;
-
-    const currentImages = (formData[fieldName] as string[]) || [];
-    const newUrls: string[] = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      setUploadProgress(prev => ({ ...prev, [`${fieldName}-${i}`]: 0 }));
-
-      const uploadData = new FormData();
-      uploadData.append('image', file);
-
-      try {
-        setUploadProgress(prev => ({ ...prev, [`${fieldName}-${i}`]: 50 }));
-        const res = await fetch(`${API_BASE}/upload`, {
-          method: 'POST',
-          body: uploadData,
-        });
-        const result = await res.json();
-        newUrls.push(result.url);
-        setUploadProgress(prev => ({ ...prev, [`${fieldName}-${i}`]: 100 }));
-      } catch {
-        showAlert('error', `Failed to upload ${file.name}`);
-      }
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      [fieldName]: [...currentImages, ...newUrls],
-    }));
-
-    setUploadingField(null);
-    setUploadProgress({});
-
-    if (newUrls.length > 0) {
-      showAlert('success', `${newUrls.length} image(s) uploaded!`);
-    }
-  };
-
-  // ─── DRAG AND DROP REORDERING ───
-  const handleDragStart = (fieldName: string, index: number) => {
-    setDraggedImage({ field: fieldName, index });
-  };
-
-  const handleDragOver = (e: React.DragEvent, fieldName: string) => {
-    e.preventDefault();
-    setDragOverField(fieldName);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverField(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, fieldName: string, dropIndex: number) => {
-    e.preventDefault();
-    setDragOverField(null);
-
-    if (!draggedImage || draggedImage.field !== fieldName) return;
-
-    const images = [...((formData[fieldName] as string[]) || [])];
-    const [moved] = images.splice(draggedImage.index, 1);
-    images.splice(dropIndex, 0, moved);
-
-    setFormData(prev => ({ ...prev, [fieldName]: images }));
-    setDraggedImage(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedImage(null);
-    setDragOverField(null);
-  };
-
-  const removeImage = (fieldName: string, index: number) => {
-    const images = (formData[fieldName] as string[]) || [];
-    const updated = images.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, [fieldName]: updated }));
-  };
-
-  const renderFieldInput = (field: ContentType['fields'][0]) => {
+  // ─── FIELD RENDERERS ───
+  const renderFieldInput = (field: FieldConfig) => {
     const value = formData[field.name] ?? '';
-    const onChange = (v: unknown) => setFormData(prev => ({ ...prev, [field.name]: v }));
 
     switch (field.type) {
       case 'textarea':
-        return <textarea className="form-input" rows={3} value={String(value)} onChange={e => onChange(e.target.value)} placeholder={field.label} />;
+        return (
+          <textarea
+            className="form-input"
+            rows={3}
+            value={String(value)}
+            onChange={(e) => setFormData((p) => ({ ...p, [field.name]: e.target.value }))}
+            placeholder={field.placeholder || field.label}
+            required={field.required}
+          />
+        );
 
       case 'boolean':
         return (
           <label className="form-checkbox">
-            <input type="checkbox" checked={Boolean(value)} onChange={e => onChange(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={Boolean(value)}
+              onChange={(e) => setFormData((p) => ({ ...p, [field.name]: e.target.checked }))}
+            />
             <span>{field.label}</span>
           </label>
         );
 
       case 'number':
-        return <input className="form-input" type="number" value={String(value)} onChange={e => onChange(Number(e.target.value))} placeholder={field.label} />;
-
-      case 'array':
-        const isImageArray = field.name.toLowerCase().includes('image');
-
-        if (isImageArray) {
-          const images = (formData[field.name] as string[]) || [];
-          const isDragOver = dragOverField === field.name;
-
-          return (
-            <div
-              className={`multi-image-field ${isDragOver ? 'drag-over' : ''}`}
-              onDragOver={e => handleDragOver(e, field.name)}
-              onDragLeave={handleDragLeave}
-            >
-              {/* Draggable Image Grid */}
-              {images.length > 0 && (
-                <div className="image-grid">
-                  {images.map((url, idx) => (
-                    <div
-                      key={`${field.name}-${idx}`}
-                      className={`image-grid-item ${draggedImage?.field === field.name && draggedImage?.index === idx ? 'dragging' : ''}`}
-                      draggable
-                      onDragStart={() => handleDragStart(field.name, idx)}
-                      onDragEnd={handleDragEnd}
-                      onDrop={e => handleDrop(e, field.name, idx)}
-                    >
-                      <div className="drag-handle">
-                        <FaGripVertical />
-                      </div>
-                      <img src={url} alt={`Image ${idx + 1}`} />
-                      <button
-                        type="button"
-                        className="image-remove-btn"
-                        onClick={() => removeImage(field.name, idx)}
-                        title="Remove image"
-                      >
-                        <FaTimes />
-                      </button>
-                      <span className="image-order-badge">{idx + 1}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {images.length === 0 && (
-                <div className="image-drop-zone">
-                  <FaImage size={32} color="var(--text-light)" />
-                  <p>No images yet. Upload some below.</p>
-                </div>
-              )}
-
-              {/* Upload Controls */}
-              <div className="multi-upload-controls">
-                <input
-                  className="form-input"
-                  type="text"
-                  value={Array.isArray(value) ? value.join(', ') : String(value)}
-                  onChange={e => onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                  placeholder="Or paste image URLs (comma separated)"
-                />
-                <span className="upload-or">— OR —</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  ref={el => { fileInputRefs.current[field.name] = el; }}
-                  style={{ display: 'none' }}
-                  onChange={e => {
-                    const files = e.target.files;
-                    if (files) handleMultiUpload(field.name, files);
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn-admin btn-select"
-                  onClick={() => fileInputRefs.current[field.name]?.click()}
-                  disabled={uploadingField === field.name}
-                >
-                  <span style={{ marginRight: 6, display: 'inline-flex', alignItems: 'center' }}>
-                    <FaUpload />
-                  </span>
-                  {uploadingField === field.name ? 'Uploading...' : 'Upload Multiple Images'}
-                </button>
-              </div>
-
-              {/* Progress */}
-              {Object.keys(uploadProgress).length > 0 && (
-                <div className="upload-progress">
-                  {Object.entries(uploadProgress).map(([key, progress]) => (
-                    <div key={key} className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${progress}%` }} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        }
-
-        return <input className="form-input" value={Array.isArray(value) ? value.join(', ') : String(value)} onChange={e => onChange(e.target.value.split(',').map(s => s.trim()))} placeholder={`${field.label} (comma separated)`} />;
+        return (
+          <input
+            className="form-input"
+            type="number"
+            value={String(value)}
+            onChange={(e) => setFormData((p) => ({ ...p, [field.name]: Number(e.target.value) }))}
+            placeholder={field.placeholder || field.label}
+            required={field.required}
+          />
+        );
 
       case 'select':
         return (
-          <select className="form-input" value={String(value)} onChange={e => onChange(e.target.value)}>
+          <select
+            className="form-input"
+            value={String(value)}
+            onChange={(e) => setFormData((p) => ({ ...p, [field.name]: e.target.value }))}
+          >
             <option value="">Select {field.label}</option>
             {field.options?.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
             ))}
           </select>
         );
@@ -439,86 +394,188 @@ export default function ContentManager() {
             {value && (
               <div className="image-preview">
                 <img src={String(value)} alt="Preview" />
-                <button type="button" className="btn-remove-image" onClick={() => onChange('')}>
+                <button
+                  type="button"
+                  className="btn-remove-image"
+                  onClick={() => setFormData((p) => ({ ...p, [field.name]: '' }))}
+                >
                   <FaTimes />
                 </button>
               </div>
             )}
-            <div className="image-upload-controls">
-              <input className="form-input" type="text" value={String(value)} onChange={e => onChange(e.target.value)} placeholder="Paste image URL" />
-              <span className="upload-or">— OR —</span>
-              <input
-                type="file"
-                accept="image/*"
-                ref={el => { fileInputRefs.current[field.name] = el; }}
-                style={{ display: 'none' }}
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileSelect(field.name, file);
-                }}
-              />
-              <button
-                type="button"
-                className="btn-admin btn-select"
-                onClick={() => fileInputRefs.current[field.name]?.click()}
-                disabled={uploadingField === field.name}
-              >
-                <span style={{ marginRight: 6, display: 'inline-flex', alignItems: 'center' }}>
-                  <FaImage />
-                </span>
-                {uploadingField === field.name ? 'Uploading...' : 'Upload Image'}
-              </button>
-            </div>
+            <input
+              className="form-input"
+              type="text"
+              value={String(value)}
+              onChange={(e) => setFormData((p) => ({ ...p, [field.name]: e.target.value }))}
+              placeholder="Paste image URL"
+            />
           </div>
         );
 
+      case 'images':
+        const images = (formData[field.name] as string[]) || [];
+        return (
+          <div className="multi-image-field">
+            {images.length > 0 && (
+              <div className="image-grid">
+                {images.map((url, idx) => (
+                  <div key={idx} className="image-grid-item">
+                    <img src={url} alt={`Image ${idx + 1}`} />
+                    <button
+                      type="button"
+                      className="image-remove-btn"
+                      onClick={() => {
+                        const updated = images.filter((_, i) => i !== idx);
+                        setFormData((p) => ({ ...p, [field.name]: updated }));
+                      }}
+                    >
+                      <FaTimes />
+                    </button>
+                    <span className="image-order-badge">{idx + 1}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <input
+              className="form-input"
+              type="text"
+              value={images.join(', ')}
+              onChange={(e) =>
+                setFormData((p) => ({
+                  ...p,
+                  [field.name]: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                }))
+              }
+              placeholder="Paste image URLs (comma separated)"
+            />
+          </div>
+        );
+
+      case 'array':
+        const arr = (formData[field.name] as string[]) || [];
+        return (
+          <input
+            className="form-input"
+            value={arr.join(', ')}
+            onChange={(e) =>
+              setFormData((p) => ({
+                ...p,
+                [field.name]: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+              }))
+            }
+            placeholder={field.placeholder || `${field.label} (comma separated)`}
+          />
+        );
+
       default:
-        return <input className="form-input" type="text" value={String(value)} onChange={e => onChange(e.target.value)} placeholder={field.label} required={field.required} />;
+        return (
+          <input
+            className="form-input"
+            type="text"
+            value={String(value)}
+            onChange={(e) => setFormData((p) => ({ ...p, [field.name]: e.target.value }))}
+            placeholder={field.placeholder || field.label}
+            required={field.required}
+          />
+        );
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        isModalOpen && setIsModalOpen(false);
-        previewItem && setPreviewItem(null)
-      }
-    };
+  // ─── RENDER CELL VALUE ───
+  const renderCellValue = (item: Record<string, unknown>, field: FieldConfig) => {
+    const value = item[field.name];
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [setIsModalOpen, isModalOpen, setPreviewItem, previewItem]);
+    if (field.type === 'boolean') {
+      return value ? '✅' : '❌';
+    }
+    if (field.type === 'images' && Array.isArray(value)) {
+      return (
+        <div className="table-image-stack">
+          {value.slice(0, 3).map((url: string, i: number) => (
+            <img
+              key={i}
+              src={url}
+              alt=""
+              className="table-thumb"
+              style={{ marginLeft: i > 0 ? -12 : 0, zIndex: 3 - i }}
+            />
+          ))}
+          {value.length > 3 && <span className="table-more-images">+{value.length - 3}</span>}
+        </div>
+      );
+    }
+    if (field.type === 'image' && value) {
+      return <img src={String(value)} alt="" className="table-thumb" />;
+    }
+    if (field.type === 'array' && Array.isArray(value)) {
+      return value.slice(0, 3).join(', ') + (value.length > 3 ? '...' : '');
+    }
+    if (field.name === 'title' || field.name === 'name') {
+      return <strong>{String(value || '-')}</strong>;
+    }
+    return String(value ?? '-');
+  };
 
-  if (error && !contentType) {
+  // ─── RENDER ───
+  if (!config) {
     return (
       <div className="cms-content-manager">
-        <div className="cms-header"><h1>⚠️ Error</h1></div>
-        <div className="alert alert-error">{error}</div>
+        <div className="cms-header">
+          <h1>⚠️ Unknown Content Type</h1>
+        </div>
+        <div className="alert alert-error">
+          Content type "{typeName}" not found. Available: {Object.keys(TABLE_MAP).join(', ')}
+        </div>
       </div>
     );
   }
 
-  if (!contentType) return <div className="cms-loading">Loading "{typeName}"...</div>;
-
   return (
     <div className="cms-content-manager">
       <div className="cms-header">
-        <h1>{contentType.icon} {contentType.label}</h1>
+        <h1>
+          {config.icon} {config.label}
+        </h1>
         <div className="cms-actions">
           {!isDeleteMode ? (
             <>
-              <button className="btn-admin btn-add" onClick={openAdd}>+ Add {contentType.label}</button>
-              <button className="btn-admin btn-delete" onClick={toggleDeleteMode}>Bulk Delete</button>
+              {!config.isSingle && (
+                <button className="btn-admin btn-add" onClick={() => openModal()}>
+                  <FaPlus /> Add {config.label}
+                </button>
+              )}
+              {config.isSingle && items.length === 0 && (
+                <button className="btn-admin btn-add" onClick={() => openModal()}>
+                  <FaPlus /> Create {config.label}
+                </button>
+              )}
+              {config.isSingle && items.length > 0 && (
+                <button className="btn-admin btn-add" onClick={() => openModal(items[0])}>
+                  <FaEdit /> Edit {config.label}
+                </button>
+              )}
+              {!config.isSingle && (
+                <button className="btn-admin btn-delete" onClick={() => setIsDeleteMode(true)}>
+                  <FaTrash /> Bulk Delete
+                </button>
+              )}
             </>
           ) : (
             <>
               <button className="btn-admin btn-select" onClick={selectAll}>
                 {selectedIds.size === items.length ? 'Deselect All' : 'Select All'}
               </button>
-              <button className="btn-admin btn-delete-confirm" disabled={selectedIds.size === 0} onClick={handleBulkDelete}>
+              <button
+                className="btn-admin btn-delete-confirm"
+                disabled={selectedIds.size === 0}
+                onClick={handleBulkDelete}
+              >
                 Delete ({selectedIds.size})
               </button>
-              <button className="btn-admin btn-cancel" onClick={toggleDeleteMode}>Cancel</button>
+              <button className="btn-admin btn-cancel" onClick={() => { setIsDeleteMode(false); setSelectedIds(new Set()); }}>
+                Cancel
+              </button>
             </>
           )}
         </div>
@@ -528,75 +585,73 @@ export default function ContentManager() {
 
       {loading ? (
         <p className="loading-text">Loading...</p>
+      ) : error ? (
+        <div className="alert alert-error">{error}</div>
       ) : items.length === 0 ? (
         <div className="empty-state">
-          <p>No {contentType.label.toLowerCase()}s yet.</p>
-          <button className="btn-admin btn-add" onClick={openAdd} style={{ marginTop: '1rem' }}>
-            + Add First {contentType.label}
-          </button>
+          <p>No {config.label.toLowerCase()} yet.</p>
+          {!config.isSingle && (
+            <button className="btn-admin btn-add" onClick={() => openModal()} style={{ marginTop: '1rem' }}>
+              <FaPlus /> Add First {config.label}
+            </button>
+          )}
         </div>
       ) : (
         <div className="cms-table-wrapper">
           <table className="cms-table">
             <thead>
               <tr>
-                {isDeleteMode && <th style={{ width: 60 }}><input type="checkbox" checked={selectedIds.size === items.length && items.length > 0} onChange={selectAll} /></th>}
-                {contentType.fields.map(f => <th key={f.name}>{f.label}</th>)}
-                <th>Status</th>
-                <th>Actions</th>
-                {typeName === 'theme' && !isDeleteMode && (
-                  <th>Preview</th>
+                {isDeleteMode && !config.isSingle && (
+                  <th style={{ width: 50 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size === items.length && items.length > 0}
+                      onChange={selectAll}
+                    />
+                  </th>
                 )}
+                {config.fields
+                  .filter((f) => !['insta_url', 'fb_url', 'behance_url', 'linkedin_url', 'reddit_url', 'youtube_url', 'dribbble_url', 'whatsapp_number', 'whatsapp_message'].includes(f.name))
+                  .map((f) => (
+                    <th key={f.name}>{f.label}</th>
+                  ))}
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {items.map(item => (
-                <tr key={item._id} className={isDeleteMode && selectedIds.has(item._id) ? 'selected-row' : ''}>
-                  {isDeleteMode && (
-                    <td><input type="checkbox" checked={selectedIds.has(item._id)} onChange={() => toggleSelection(item._id)} /></td>
-                  )}
-                  {contentType.fields.map(f => (
-                    <td key={f.name}>
-                      {f.type === 'boolean' ? (item.data[f.name] ? '✅' : '❌') :
-                        f.type === 'array' && f.name.toLowerCase().includes('image') ? (
-                          <div className="table-image-stack">
-                            {((item.data[f.name] as string[]) || []).slice(0, 3).map((url, i) => (
-                              <img key={i} src={url} alt="" className="table-thumb" style={{ marginLeft: i > 0 ? -12 : 0, zIndex: 3 - i }} />
-                            ))}
-                            {((item.data[f.name] as string[]) || []).length > 3 && (
-                              <span className="table-more-images">+{((item.data[f.name] as string[]) || []).length - 3}</span>
-                            )}
-                          </div>
-                        ) :
-                          f.type === 'array' ? (item.data[f.name] as string[])?.join(', ') :
-                            f.type === 'image' && item.data[f.name] ? (
-                              <img src={String(item.data[f.name])} alt="" className="table-thumb" />
-                            ) :
-                              f.type === 'select' ? (
-                                <span className="tag">{String(item.data[f.name] || '-')}</span>
-                              ) :
-                                String(item.data[f.name] ?? '-')}
+              {items.map((item) => (
+                <tr
+                  key={String(item.id)}
+                  className={selectedIds.has(String(item.id)) ? 'selected-row' : ''}
+                >
+                  {isDeleteMode && !config.isSingle && (
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(String(item.id))}
+                        onChange={() => toggleSelection(String(item.id))}
+                      />
                     </td>
-                  ))}
-                  <td><span className={`status-badge status-${item.status}`}>{item.status}</span></td>
+                  )}
+                  {config.fields
+                    .filter((f) => !['insta_url', 'fb_url', 'behance_url', 'linkedin_url', 'reddit_url', 'youtube_url', 'dribbble_url', 'whatsapp_number', 'whatsapp_message'].includes(f.name))
+                    .map((f) => (
+                      <td key={f.name}>{renderCellValue(item, f)}</td>
+                    ))}
                   <td>
                     {!isDeleteMode && (
                       <>
-                        <button className="btn-edit-card" onClick={() => openEdit(item)}>Edit</button>
-                        <button className="btn-delete-small" onClick={() => handleDelete(item._id)}>Delete</button>
+                        <button className="btn-edit-card" onClick={() => openModal(item)}>
+                          <FaEdit /> Edit
+                        </button>
+                        {!config.isSingle && (
+                          <button className="btn-delete-small" onClick={() => handleDelete(String(item.id))}>
+                            Delete
+                          </button>
+                        )}
                       </>
                     )}
                   </td>
-                  {typeName === 'theme' && !isDeleteMode && (
-                    <td>
-                      <button
-                        className="btn-edit-card"
-                        onClick={() => setPreviewItem(item)}
-                      >
-                        👁️ Preview
-                      </button>
-                    </td>
-                  )}
                 </tr>
               ))}
             </tbody>
@@ -604,46 +659,50 @@ export default function ContentManager() {
         </div>
       )}
 
+      {/* ─── MODAL ─── */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setIsModalOpen(false)}>
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <div className="modal modal-large">
             <div className="modal-header">
-              <h2>{editingId ? 'Edit' : 'Add'} {contentType.label}</h2>
-              <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
+              <h2>
+                {editingId ? '✏️ Edit' : '➕ Add'} {config.label}
+              </h2>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  resetForm();
+                }}
+              >
+                ×
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="modal-form">
-              {contentType.fields.map(field => (
+              {config.fields.map((field) => (
                 <div key={field.name} className="form-group">
-                  <label className="form-label">{field.label}{field.required && ' *'}</label>
+                  <label className="form-label">
+                    {field.label}
+                    {field.required && ' *'}
+                  </label>
                   {renderFieldInput(field)}
                 </div>
               ))}
               <div className="modal-actions">
-                <button type="button" className="btn-admin btn-cancel" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-admin btn-add">{editingId ? 'Update' : 'Create'}</button>
+                <button
+                  type="button"
+                  className="btn-admin btn-cancel"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-admin btn-add">
+                  {editingId ? 'Update' : 'Create'}
+                </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      {/* Preview Modal */}
-      {previewItem && typeName === 'theme' && (
-        <div className="modal-overlay" onClick={() => setPreviewItem(null)}>
-          <div className="modal modal-large" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>👁️ Preview: {String(previewItem.data.title || previewItem.data.name || 'Theme')}</h2>
-              <button className="modal-close" onClick={() => setPreviewItem(null)}>×</button>
-            </div>
-            <ThemePreview previewData={previewItem.data as Record<string, unknown>} />
-            <div className="modal-actions">
-              <button className="btn-admin btn-cancel" onClick={() => setPreviewItem(null)}>Close</button>
-              <button
-                className="btn-admin btn-add"
-                onClick={() => { setPreviewItem(null); openEdit(previewItem); }}
-              >
-                Edit This Theme
-              </button>
-            </div>
           </div>
         </div>
       )}

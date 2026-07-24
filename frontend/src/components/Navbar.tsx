@@ -1,20 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import type { ContentItem } from '..';
+import { useState, useEffect } from 'react';
+import { supabase } from '../utils/supabase';
 
-const API_URL: string = `${(import.meta as any).env?.VITE_APP_API_URL}/api/content/hero?status=published`;
+// ─── TYPES ───
 
-const Navbar: React.FC = () => {
+interface SupabaseHero {
+  id: string;
+  greeting?: string;
+  title?: string;
+  subtitle?: string;
+  background_image?: string;
+  backgroundImage?: string;
+  backgroundimage?: string;
+  is_active?: boolean;
+  [key: string]: unknown;
+}
+
+// ─── COMPONENT ───
+
+export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [hero, setHero] = useState<ContentItem | null>(null);
+  const [hero, setHero] = useState<SupabaseHero | null>(null);
 
+  // Fetch hero from Supabase
   useEffect(() => {
-    fetch(API_URL)
-      .then((r) => r.json())
-      .then((data: ContentItem[]) => setHero(data[0] || null))
-      .catch(() => setHero(null));
+    const loadHero = async () => {
+      const { data, error } = await supabase
+        .from('hero')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index')
+        .single();
+
+      if (error) {
+        console.error('Navbar hero fetch error:', error);
+        return;
+      }
+
+      if (data) {
+        setHero(data as SupabaseHero);
+      }
+    };
+
+    loadHero();
   }, []);
 
+  // Scroll handler
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
@@ -28,8 +59,14 @@ const Navbar: React.FC = () => {
     { label: 'Contact', href: '#contact' },
   ];
 
-  const d = hero?.data as Record<string, unknown> | undefined;
-  const backgroundImage = d?.backgroundImage ? String(d.backgroundImage) : d?.backgroundImage ? String(d.backgroundimage) : null;
+  // Support both snake_case (Supabase) and camelCase (legacy)
+  const backgroundImage = hero?.background_image
+    ? String(hero.background_image)
+    : hero?.backgroundImage
+      ? String(hero.backgroundImage)
+      : hero?.backgroundimage
+        ? String(hero.backgroundimage)
+        : null;
 
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
@@ -47,7 +84,11 @@ const Navbar: React.FC = () => {
         <ul className={`nav-links ${mobileOpen ? 'open' : ''}`}>
           {navLinks.map((link) => (
             <li key={link.href}>
-              <a href={link.href} className={`${backgroundImage ? 'bg-nav' : ''}`} onClick={() => setMobileOpen(false)}>
+              <a
+                href={link.href}
+                className={`${backgroundImage ? 'bg-nav' : ''}`}
+                onClick={() => setMobileOpen(false)}
+              >
                 {link.label}
               </a>
             </li>
@@ -56,6 +97,4 @@ const Navbar: React.FC = () => {
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

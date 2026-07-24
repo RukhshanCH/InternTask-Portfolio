@@ -1,14 +1,71 @@
 import type { ContentItem } from '../index';
 
-interface AboutProps {
-  data?: ContentItem | null;
+// ─── TYPES ───
+
+// Supabase flat schema (snake_case)
+export interface SupabaseAbout {
+  id: string;
+  heading?: string;
+  bio?: string;
+  paragraphs?: string[];
+  image_url?: string;
+  stats?: { number: string; label: string }[] | string[];
+  is_active?: boolean;
+  order_index?: number;
+  created_at?: string;
+  [key: string]: unknown;
 }
 
+interface AboutProps {
+  data?: ContentItem | SupabaseAbout | null;
+}
+
+// ─── HELPER: Normalize about data ───
+function normalizeAboutData(item: ContentItem | SupabaseAbout | null | undefined): Record<string, unknown> | null {
+  if (!item) return null;
+
+  // If it has a `data` property → legacy ContentItem wrapper
+  if ('data' in item && item.data && typeof item.data === 'object') {
+    return item.data as Record<string, unknown>;
+  }
+
+  // Otherwise → flat Supabase object
+  return item as Record<string, unknown>;
+}
+
+// ─── HELPER: Parse stats ───
+function parseStats(rawStats: unknown): { number: string; label: string }[] {
+  if (Array.isArray(rawStats)) {
+    // If already objects → return as-is
+    if (rawStats.length > 0 && typeof rawStats[0] === 'object' && rawStats[0] !== null) {
+      return (rawStats as { number?: string; label?: string }[]).map((s) => ({
+        number: String(s.number || '0'),
+        label: String(s.label || 'Stat'),
+      }));
+    }
+
+    // If strings like "5+|Years Experience" → parse
+    return rawStats.map((s: string) => {
+      const parts = String(s).split('|').map((p) => p.trim());
+      return { number: parts[0] || '0', label: parts[1] || 'Stat' };
+    });
+  }
+
+  return [
+    { number: '5+', label: 'Years Experience' },
+    { number: '50+', label: 'Projects Completed' },
+    { number: '20+', label: 'Happy Clients' },
+  ];
+}
+
+// ─── COMPONENT ───
+
 export default function About({ data: aboutProp }: AboutProps) {
-  const d = aboutProp?.data as Record<string, unknown> | undefined;
+  const d = normalizeAboutData(aboutProp);
 
   const heading = String(d?.heading || 'About Me');
 
+  // Bio: support both `bio` (single text) and `paragraphs` (array)
   const rawBio = String(
     d?.bio ||
       (Array.isArray(d?.paragraphs) ? (d.paragraphs as string[]).join('\n\n') : '') ||
@@ -16,23 +73,17 @@ export default function About({ data: aboutProp }: AboutProps) {
   );
   const paragraphs = rawBio.split(/\n\n+/).filter((p) => p.trim().length > 0);
 
-  const imageUrl = d?.imageUrl ? String(d.imageUrl) : d?.imageurl ? String(d.imageurl) : null;
+  // Image: support both snake_case and camelCase
+  const imageUrl = d?.image_url
+    ? String(d.image_url)
+    : d?.imageUrl
+      ? String(d.imageUrl)
+      : d?.imageurl
+        ? String(d.imageurl)
+        : null;
 
-  const rawStats = d?.stats;
-  let stats: { number: string; label: string }[] = [];
-  if (Array.isArray(rawStats)) {
-    stats = rawStats.map((s: string) => {
-      const parts = String(s).split('|').map((p) => p.trim());
-      return { number: parts[0] || '0', label: parts[1] || 'Stat' };
-    });
-  }
-  if (stats.length === 0) {
-    stats = [
-      { number: '5+', label: 'Years Experience' },
-      { number: '50+', label: 'Projects Completed' },
-      { number: '20+', label: 'Happy Clients' },
-    ];
-  }
+  // Stats: support both JSONB objects and pipe-delimited strings
+  const stats = parseStats(d?.stats);
 
   return (
     <section id="about" className="about section">

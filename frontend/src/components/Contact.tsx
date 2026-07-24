@@ -1,10 +1,53 @@
-import { useState } from 'react';
+import { useState, type JSX } from 'react';
 import type { ContentItem } from '../index';
-import { FaEnvelope, FaLinkedin, FaPhone, FaMapMarkerAlt, FaWhatsapp, FaInstagram, FaFacebook, FaReddit } from 'react-icons/fa';
+import { FaEnvelope, FaLinkedin, FaPhone, FaMapMarkerAlt, FaWhatsapp, FaInstagram, FaFacebook, FaReddit, FaGithub, FaTwitter, FaYoutube, FaDribbble } from 'react-icons/fa';
+
+// ─── TYPES ───
+
+// Supabase flat schema (snake_case) — individual link fields like projects
+export interface SupabaseContact {
+  id: string;
+  heading?: string;
+  description?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  whatsapp_number?: string;
+  whatsapp_message?: string;
+  linkedin_url?: string;
+  github_url?: string;
+  twitter_url?: string;
+  instagram_url?: string;
+  facebook_url?: string;
+  reddit_url?: string;
+  youtube_url?: string;
+  dribbble_url?: string;
+  behance_url?: string;
+  form_enabled?: boolean;
+  is_active?: boolean;
+  order_index?: number;
+  created_at?: string;
+  [key: string]: unknown;
+}
 
 interface ContactProps {
-  data?: ContentItem | null;
+  data?: ContentItem | SupabaseContact | null;
 }
+
+// ─── HELPER: Normalize contact data ───
+function normalizeContactData(item: ContentItem | SupabaseContact | null | undefined): Record<string, unknown> | null {
+  if (!item) return null;
+
+  // If it has a `data` property → legacy ContentItem wrapper
+  if ('data' in item && item.data && typeof item.data === 'object') {
+    return item.data as Record<string, unknown>;
+  }
+
+  // Otherwise → flat Supabase object
+  return item as Record<string, unknown>;
+}
+
+// ─── COMPONENT ───
 
 export default function Contact({ data: contactProp }: ContactProps) {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -15,35 +58,99 @@ export default function Contact({ data: contactProp }: ContactProps) {
     setFormData({ name: '', email: '', message: '' });
   };
 
-  const d = (contactProp?.data as Record<string, unknown>) || {};
+  const d = normalizeContactData(contactProp) || {};
 
   const heading = String(d.heading || 'Get In Touch');
-  const subheading = String(d.subheading || "Have a project in mind? Let's work together.");
+  const subheading = String(
+    d.description || d.subheading || "Have a project in mind? Let's work together."
+  );
+
+  // Contact details
   const email = d.email ? String(d.email) : undefined;
   const phone = d.phone ? String(d.phone) : undefined;
   const location = d.location ? String(d.location) : undefined;
-  const linkedin = d.linkedin ? String(d.linkedin) : undefined;
-  const instagram = d.instagram ? String(d.instagram) : undefined;
-  const facebook = d.facebook ? String(d.facebook) : undefined;
-  const reddit = d.reddit ? String(d.reddit) : undefined;
-  const whatsapp = d.whatsapp ? String(d.whatsapp) : undefined;
-  const formEnabled = d.formEnabled !== false;
-  const WHATSAPP_MSG = d.whatsappMessage ? String(d.whatsappMessage) : 'Hello!';
 
+  // WhatsApp: support both snake_case and camelCase
+  const whatsappNumber = d.whatsapp_number
+    ? String(d.whatsapp_number)
+    : d.whatsapp
+      ? String(d.whatsapp)
+      : undefined;
+
+  const WHATSAPP_MSG = d.whatsapp_message
+    ? String(d.whatsapp_message)
+    : d.whatsappMessage
+      ? String(d.whatsappMessage)
+      : 'Hello!';
+
+  // Form toggle: support both snake_case and camelCase
+  const formEnabled = d.form_enabled !== false && d.formEnabled !== false;
+
+  // Social links — individual fields like projects (snake_case + camelCase fallback)
   const socials = [
-    { url: linkedin, icon: <FaLinkedin size={20} />, label: 'LinkedIn', title: 'LinkedIn' },
-    { url: instagram, icon: <FaInstagram size={20} />, label: 'Instagram', title: 'Instagram' },
-    { url: facebook, icon: <FaFacebook size={20} />, label: 'facebook', title: 'facebook' },
-    { url: reddit, icon: <FaReddit size={20} />, label: 'reddit', title: 'reddit' },
     {
-      url: whatsapp
-        ? `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(WHATSAPP_MSG)}`
+      url: d.linkedin_url ? String(d.linkedin_url) : d.linkedin ? String(d.linkedin) : undefined,
+      icon: <FaLinkedin size={20} />,
+      label: 'LinkedIn',
+      title: 'LinkedIn',
+    },
+    {
+      url: d.github_url ? String(d.github_url) : d.github ? String(d.github) : undefined,
+      icon: <FaGithub size={20} />,
+      label: 'GitHub',
+      title: 'GitHub',
+    },
+    {
+      url: d.twitter_url ? String(d.twitter_url) : d.twitter ? String(d.twitter) : undefined,
+      icon: <FaTwitter size={20} />,
+      label: 'Twitter',
+      title: 'Twitter',
+    },
+    {
+      url: d.instagram_url ? String(d.instagram_url) : d.instagram ? String(d.instagram) : undefined,
+      icon: <FaInstagram size={20} />,
+      label: 'Instagram',
+      title: 'Instagram',
+    },
+    {
+      url: d.facebook_url ? String(d.facebook_url) : d.facebook ? String(d.facebook) : undefined,
+      icon: <FaFacebook size={20} />,
+      label: 'Facebook',
+      title: 'Facebook',
+    },
+    {
+      url: d.reddit_url ? String(d.reddit_url) : d.reddit ? String(d.reddit) : undefined,
+      icon: <FaReddit size={20} />,
+      label: 'Reddit',
+      title: 'Reddit',
+    },
+    {
+      url: d.youtube_url ? String(d.youtube_url) : d.youtube ? String(d.youtube) : undefined,
+      icon: <FaYoutube size={20} />,
+      label: 'YouTube',
+      title: 'YouTube',
+    },
+    {
+      url: d.dribbble_url ? String(d.dribbble_url) : d.dribbble ? String(d.dribbble) : undefined,
+      icon: <FaDribbble size={20} />,
+      label: 'Dribbble',
+      title: 'Dribbble',
+    },
+    {
+      url: d.behance_url ? String(d.behance_url) : d.behance ? String(d.behance) : undefined,
+      icon: <FaDribbble size={20} />,
+      label: 'Behance',
+      title: 'Behance',
+    },
+    {
+      url: whatsappNumber
+        ? `https://wa.me/${String(whatsappNumber).replace(/\D/g, '')}?text=${encodeURIComponent(WHATSAPP_MSG)}`
         : undefined,
       icon: <FaWhatsapp size={20} />,
       label: 'WhatsApp',
       title: 'WhatsApp',
     },
-  ].filter((s) => s.url);
+  ].filter((s): s is { url: string; icon: JSX.Element; label: string; title: string } => !!s.url);
 
   return (
     <section id="contact" className="contact section">

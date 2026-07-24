@@ -1,5 +1,21 @@
 import type { ContentItem } from '../index';
 
+// ─── TYPES ───
+
+// Supabase flat schema (snake_case)
+export interface SupabaseHero {
+  id: string;
+  greeting?: string;
+  title?: string;
+  subtitle?: string;
+  buttons?: HeroButton[] | string[];
+  background_image?: string;
+  is_active?: boolean;
+  order_index?: number;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
 interface HeroButton {
   label: string;
   link: string;
@@ -7,9 +23,23 @@ interface HeroButton {
 }
 
 interface HeroProps {
-  data?: ContentItem | null;
+  data?: ContentItem | SupabaseHero | null;
 }
 
+// ─── HELPER: Normalize hero data ───
+function normalizeHeroData(item: ContentItem | SupabaseHero | null | undefined): Record<string, unknown> | null {
+  if (!item) return null;
+
+  // If it has a `data` property → legacy ContentItem wrapper
+  if ('data' in item && item.data && typeof item.data === 'object') {
+    return item.data as Record<string, unknown>;
+  }
+
+  // Otherwise → flat Supabase object
+  return item as Record<string, unknown>;
+}
+
+// ─── HELPER: Parse buttons ───
 function parseButtons(buttonsData: unknown): HeroButton[] {
   if (Array.isArray(buttonsData) && buttonsData.length > 0 && typeof buttonsData[0] !== 'string') {
     return buttonsData as HeroButton[];
@@ -32,8 +62,10 @@ function parseButtons(buttonsData: unknown): HeroButton[] {
   ];
 }
 
+// ─── COMPONENT ───
+
 export default function Hero({ data: heroProp }: HeroProps) {
-  const d = heroProp?.data as Record<string, unknown> | undefined;
+  const d = normalizeHeroData(heroProp);
 
   const greeting = String(d?.greeting || 'Hello, I am');
   const title = String(d?.title || 'Alex Developer');
@@ -41,11 +73,15 @@ export default function Hero({ data: heroProp }: HeroProps) {
     d?.subtitle || 'Full-stack developer crafting modern web experiences with React, Node.js, and TypeScript.'
   );
   const buttons = parseButtons(d?.buttons);
-  const backgroundImage = d?.backgroundImage
-    ? String(d.backgroundImage)
-    : d?.backgroundimage
-      ? String(d.backgroundimage)
-      : null;
+
+  // Support both snake_case (Supabase) and camelCase (legacy)
+  const backgroundImage = d?.background_image
+    ? String(d.background_image)
+    : d?.backgroundImage
+      ? String(d.backgroundImage)
+      : d?.backgroundimage
+        ? String(d.backgroundimage)
+        : null;
 
   return (
     <section
